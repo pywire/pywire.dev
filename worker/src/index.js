@@ -1,24 +1,48 @@
-// worker/src/index.js
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // 1. Docs Route
-    // Matches /docs, /docs/, /docs/guide/getting-started
-    if (path.startsWith("/docs")) {
-      // Points to the build from Repo A
-      const DOCS_ORIGIN = "https://pywire-docs.pages.dev";
+    // --- 1. HANDLE SHORTCUT REDIRECTS ---
+    const redirects = {
+      // "/discord": "https://discord.gg/pywire", // Update this!
+      "/github": "https://github.com/pywire",
+    };
+    if (redirects[path]) return Response.redirect(redirects[path], 302);
+
+    // --- 2. DEFINE PROXY FUNCTION ---
+    // This helper strips the 'Host' header so Pages accepts the request
+    async function proxy(targetOrigin, pathOverride) {
       const newUrl = new URL(request.url);
-      newUrl.hostname = "pywire-docs.pages.dev";
-      return fetch(new Request(newUrl, request));
+      newUrl.hostname = targetOrigin;
+
+      // Apply path override if provided (for stripping /docs)
+      if (pathOverride !== undefined) {
+        newUrl.pathname = pathOverride;
+      }
+
+      // ⚠️ CRITICAL: Create a clean request to avoid Host header mismatch
+      const newRequest = new Request(newUrl, {
+        method: request.method,
+        headers: request.headers,
+        body: request.body,
+        redirect: "manual",
+      });
+
+      // Force the Host header to match the target origin
+      newRequest.headers.set("Host", targetOrigin);
+
+      return fetch(newRequest);
     }
 
-    // 2. Landing Route (Catch-all)
-    // Points to the build from Repo B
-    const LANDING_ORIGIN = "https://pywire-landing.pages.dev";
-    const newUrl = new URL(request.url);
-    newUrl.hostname = "pywire-landing.pages.dev";
-    return fetch(new Request(newUrl, request));
+    // --- 3. ROUTE TO DOCS ---
+    if (path.startsWith("/docs")) {
+      // Strip "/docs" so the origin sees "/_astro/..." or "/"
+      const newPath = path.replace(/^\/docs/, "") || "/";
+      return proxy("pywire-docs.pages.dev", newPath);
+    }
+
+    // --- 4. ROUTE TO LANDING ---
+    return proxy("pywire-landing.pages.dev");
   },
 };
