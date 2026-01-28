@@ -6,7 +6,7 @@ export default {
     // --- 1. HANDLE SHORTCUT REDIRECTS ---
     const redirects = {
       // "/discord": "https://discord.gg/pywire", // Update this!
-      "/github": "https://github.com/pywire",
+      "/github": "https://github.com/pywire/pywire",
     };
     if (redirects[path]) return Response.redirect(redirects[path], 302);
 
