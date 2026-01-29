@@ -3,6 +3,14 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // --- 0. DETERMINE ENVIRONMENT ---
+    const hostname = url.hostname;
+    const isNightly = hostname.startsWith("nightly.");
+
+    // Define base targets based on environment
+    const landingTarget = isNightly ? "nightly.pywire-landing.pages.dev" : "pywire-landing.pages.dev";
+    const docsTarget = isNightly ? "nightly.pywire-docs.pages.dev" : "pywire-docs.pages.dev";
+
     // --- 1. HANDLE SHORTCUT REDIRECTS ---
     const redirects = {
       // "/discord": "https://discord.gg/pywire", // Update this!
@@ -39,10 +47,10 @@ export default {
     if (path.startsWith("/docs")) {
       // Strip "/docs" so the origin sees "/_astro/..." or "/"
       const newPath = path.replace(/^\/docs/, "") || "/";
-      return proxy("pywire-docs.pages.dev", newPath);
+      return proxy(docsTarget, newPath);
     }
 
     // --- 4. ROUTE TO LANDING ---
-    return proxy("pywire-landing.pages.dev");
+    return proxy(landingTarget);
   },
 };

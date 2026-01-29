@@ -5,6 +5,7 @@
 # Terraform state files (contain secrets in plain text!)
 terraform.tfstate
 terraform.tfstate.backup
+terraform.tfstate.*.backup
 .terraform/
 .terraform.lock.hcl
 
