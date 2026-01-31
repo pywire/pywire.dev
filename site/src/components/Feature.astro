@@ -34,35 +34,35 @@ const { icon = 'mdi:rocket', title = 'Title' }: Props = Astro.props
 <style lang="scss">
   .hud-card {
     position: relative;
-    padding: var(--space-l);
-    background: var(--surface-color);
+    backdrop-filter: blur(8px);
+    transition: all var(--animation-speed-fast) var(--cubic-bezier);
     border: 1px solid var(--border-color-subtle);
     border-left: 4px solid var(--color-wire-glow);
     border-radius: var(--radius-small);
-    transition: all var(--animation-speed-fast) var(--cubic-bezier);
-    backdrop-filter: blur(8px);
+    background: var(--surface-color);
+    padding: var(--space-l);
 
     &:hover {
       transform: translateY(-4px);
-      border-color: var(--color-wire-glow);
       box-shadow: 0 10px 30px -10px rgba(0, 240, 255, 0.2);
-      
+      border-color: var(--color-wire-glow);
+
       :global([data-icon]) {
         filter: drop-shadow(0 0 8px var(--color-wire-glow));
       }
     }
 
     :global([data-icon]) {
+      transition: all var(--animation-speed-fast) var(--cubic-bezier);
       inline-size: 3rem;
       block-size: auto;
       color: var(--color-wire-glow);
-      transition: all var(--animation-speed-fast) var(--cubic-bezier);
     }
 
     .content {
       p {
-        color: var(--foreground-color);
         opacity: 0.8;
+        color: var(--foreground-color);
         font-size: 0.95rem;
         line-height: 1.6;
       }

@@ -19,7 +19,7 @@ const viteConfig = {
     preprocessorOptions: {
       scss: {
         logger: {
-          warn: () => { },
+          warn: () => {},
         },
       },
     },

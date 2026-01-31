@@ -222,9 +222,9 @@ import Logo from './Logo.astro'
     top: 0;
     z-index: 100;
     backdrop-filter: blur(12px);
-    background-color: light-dark(rgba(255, 255, 255, 0.8), rgba(9, 10, 17, 0.8));
-    border-bottom: 1px solid var(--border-color-subtle);
     transition: all var(--animation-speed-fast) var(--cubic-bezier);
+    border-bottom: 1px solid var(--border-color-subtle);
+    background-color: light-dark(rgba(255, 255, 255, 0.8), rgba(9, 10, 17, 0.8));
 
     > .container {
       display: flex;
@@ -260,20 +260,20 @@ import Logo from './Logo.astro'
         }
 
         a {
-          font-family: var(--font-family-mono);
-          text-transform: lowercase;
-          font-size: 0.9rem;
-          color: var(--foreground-color);
-          text-decoration: none;
-          padding: 0.5rem;
-          border-radius: var(--radius-small);
           transition: all var(--animation-speed-fast) var(--cubic-bezier);
+          border-radius: var(--radius-small);
+          padding: 0.5rem;
+          color: var(--foreground-color);
+          font-size: 0.9rem;
+          font-family: var(--font-family-mono);
+          text-decoration: none;
+          text-transform: lowercase;
 
           &:hover,
           &:focus-visible,
           &.is-active {
-            color: var(--color-wire-glow);
             background-color: light-dark(rgba(15, 23, 42, 0.05), rgba(0, 240, 255, 0.05));
+            color: var(--color-wire-glow);
           }
         }
       }
@@ -281,13 +281,13 @@ import Logo from './Logo.astro'
 
     .type-icon {
       a {
-        padding: 0 !important;
         background: none !important;
+        padding: 0 !important;
         color: var(--foreground-color) !important;
 
         &:hover {
-          color: var(--color-wire-glow) !important;
           transform: translateY(-1px);
+          color: var(--color-wire-glow) !important;
         }
 
         svg {
@@ -300,16 +300,16 @@ import Logo from './Logo.astro'
     /* Mobile handling simplifies for toolbar */
     .mobile-menu {
       display: none;
-      
+
       &.show {
         display: block;
         position: absolute;
         top: 100%;
-        left: 0;
         right: 0;
+        left: 0;
+        border-bottom: 1px solid var(--border-color-subtle);
         background: var(--background-color);
         padding: 1rem;
-        border-bottom: 1px solid var(--border-color-subtle);
       }
     }
   }

@@ -44,9 +44,11 @@
   --text-decoration-color-hover: var(--link-color);
 
   // gradient tokens
-  --text-gradient: linear-gradient(315deg,
-      light-dark(#0f172a, var(--color-wire-glow)) 25%,
-      light-dark(var(--color-wire-dim), #00d1b7));
+  --text-gradient: linear-gradient(
+    315deg,
+    light-dark(#0f172a, var(--color-wire-glow)) 25%,
+    light-dark(var(--color-wire-dim), #00d1b7)
+  );
 
   // theme settings
   --radius-small: 3px;

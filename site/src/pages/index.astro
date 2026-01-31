@@ -43,13 +43,15 @@ count = 0`
           </div>
         </div>
         <div class="hero-code-block relative">
-          <div class="absolute -inset-4 bg-cyan-500/10 blur-2xl rounded-full"></div>
-          <div class="relative rounded-lg border border-[var(--theme-dark-border)] bg-[var(--theme-dark-surface)] p-6 shadow-2xl">
+          <div class="absolute -inset-4 rounded-full bg-cyan-500/10 blur-2xl"></div>
+          <div
+            class="relative rounded-lg border border-[var(--theme-dark-border)] bg-[var(--theme-dark-surface)] p-6 shadow-2xl"
+          >
             <div class="mb-4 flex gap-2">
               <div class="h-3 w-3 rounded-full bg-red-500/50"></div>
               <div class="h-3 w-3 rounded-full bg-yellow-500/50"></div>
               <div class="h-3 w-3 rounded-full bg-green-500/50"></div>
-              <span class="ml-2 text-xs font-mono text-[var(--theme-dark-muted)]">counter.wire</span>
+              <span class="ml-2 font-mono text-xs text-[var(--theme-dark-muted)]">counter.wire</span>
             </div>
             <Code code={pywireCode} lang="html" theme="github-dark" />
           </div>
@@ -66,7 +68,7 @@ count = 0`
           Python logic and the Browser.
         </Feature>
         <Feature icon="lucide:file-code" title="Single File Components">
-          Keep your Python logic, HTML structure, and scoped styles in one cohesive `.wire` file. No more context 
+          Keep your Python logic, HTML structure, and scoped styles in one cohesive `.wire` file. No more context
           switching between languages.
         </Feature>
         <Feature icon="lucide:ban" title="Zero JS Overhead">
@@ -84,11 +86,7 @@ count = 0`
   }
 
   .text-gradient {
-    background: linear-gradient(
-      315deg,
-      var(--color-wire-glow) 25%,
-      var(--color-wire-dim)
-    );
+    background: linear-gradient(315deg, var(--color-wire-glow) 25%, var(--color-wire-dim));
     background-clip: border-box;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
