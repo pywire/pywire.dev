@@ -1,0 +1,10 @@
+#!/bin/sh -e
+
+echo "-> Formatting check..."
+pnpm prettier --check .
+
+echo "-> Linting..."
+pnpm eslint .
+
+echo "-> Type checking..."
+pnpm tsc --noEmit

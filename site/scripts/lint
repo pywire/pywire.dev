@@ -1,0 +1,7 @@
+#!/bin/sh -e
+
+echo "-> Formatting..."
+pnpm prettier --write .
+
+echo "-> Linting (with fixes)..."
+pnpm eslint --fix .
