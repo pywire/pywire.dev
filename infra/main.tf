@@ -59,6 +59,15 @@ resource "cloudflare_dns_record" "nightly" {
   ttl     = 1
 }
 
+# --- VS Code Marketplace Domain Verification ---
+resource "cloudflare_dns_record" "vscode_verification" {
+  zone_id = var.zone_id
+  name    = "_visual-studio-marketplace-pywire"
+  content = var.vscode_marketplace_verification_code
+  type    = "TXT"
+  ttl     = 3600
+}
+
 
 
 
