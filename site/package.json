@@ -1,8 +1,8 @@
 {
-  "name": "accessible-astro-starter",
-  "description": "An Accessible Starter Theme for Astro including several accessibility features and tools to help you build faster.",
-  "version": "4.3.2",
-  "author": "Incluud",
+  "name": "pywire-site",
+  "description": "The official pywire.dev website",
+  "version": "0.1.0",
+  "author": "Reece Holmdahl",
   "license": "MIT",
   "type": "module",
   "homepage": "https://accessible-astro-starter.incluud.dev/",
