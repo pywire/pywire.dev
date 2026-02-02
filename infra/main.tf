@@ -21,10 +21,11 @@ resource "cloudflare_pages_project" "docs" {
   source = {
     type = "github"
     config = {
-      owner               = "pywire"
-      repo_name           = "pywire"
-      production_branch   = "main"
-      deployments_enabled = false
+      owner                          = "pywire"
+      repo_name                      = "pywire"
+      production_branch              = "main"
+      production_deployments_enabled = false
+      preview_deployment_setting     = "none"
     }
   }
 
@@ -43,10 +44,11 @@ resource "cloudflare_pages_project" "landing" {
   source = {
     type = "github"
     config = {
-      owner               = "pywire"
-      repo_name           = "pywire.dev"
-      production_branch   = "main"
-      deployments_enabled = false
+      owner                          = "pywire"
+      repo_name                      = "pywire.dev"
+      production_branch              = "main"
+      production_deployments_enabled = false
+      preview_deployment_setting     = "none"
     }
   }
 
