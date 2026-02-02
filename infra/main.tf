@@ -18,7 +18,15 @@ resource "cloudflare_pages_project" "docs" {
   name              = "pywire-docs"
   production_branch = "main"
 
-
+  source = {
+    type = "github"
+    config = {
+      owner               = "pywire"
+      repo_name           = "pywire"
+      production_branch   = "main"
+      deployments_enabled = false
+    }
+  }
 
   build_config = {
     root_dir        = "docs"
@@ -31,6 +39,16 @@ resource "cloudflare_pages_project" "landing" {
   account_id        = var.account_id
   name              = "pywire-landing"
   production_branch = "main"
+
+  source = {
+    type = "github"
+    config = {
+      owner               = "pywire"
+      repo_name           = "pywire.dev"
+      production_branch   = "main"
+      deployments_enabled = false
+    }
+  }
 
   build_config = {
     root_dir        = "site"
@@ -73,15 +91,15 @@ resource "cloudflare_dns_record" "vscode_verification" {
 
 # --- 4. The DNS & Routing ---
 resource "cloudflare_workers_route" "catch_all" {
-  zone_id     = var.zone_id
-  pattern     = "pywire.dev/*"
-  script      = cloudflare_workers_script.router.script_name
+  zone_id = var.zone_id
+  pattern = "pywire.dev/*"
+  script  = cloudflare_workers_script.router.script_name
 }
 
 resource "cloudflare_workers_route" "nightly" {
-  zone_id     = var.zone_id
-  pattern     = "nightly.pywire.dev/*"
-  script      = cloudflare_workers_script.router.script_name
+  zone_id = var.zone_id
+  pattern = "nightly.pywire.dev/*"
+  script  = cloudflare_workers_script.router.script_name
 }
 
 # --- 5. Email Routing Setup ---
@@ -96,7 +114,7 @@ resource "cloudflare_email_routing_settings" "main" {
 # Helper to find every unique email address across both variables
 locals {
   all_unique_emails = distinct(concat(
-    values(var.forwarding_rules), 
+    values(var.forwarding_rules),
     var.maintainer_emails
   ))
 }
@@ -123,7 +141,7 @@ resource "cloudflare_email_routing_rule" "individual_aliases" {
   }]
 
   actions = [{
-    type  = "forward"
+    type = "forward"
     # Look up the verified address resource
     value = [cloudflare_email_routing_address.destinations[each.value].email]
   }]
@@ -145,7 +163,7 @@ resource "cloudflare_email_routing_rule" "maintainers_group" {
     type = "forward"
     # Dynamically grab the verified email ID for everyone in the list
     value = [
-      for email in var.maintainer_emails : 
+      for email in var.maintainer_emails :
       cloudflare_email_routing_address.destinations[email].email
     ]
   }]

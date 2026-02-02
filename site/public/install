@@ -45,4 +45,4 @@ fi
 
 # Run create-pywire-app
 info "Running create-pywire-app..."
-exec uvx create-pywire-app "$@"
+exec uvx create-pywire-app "$@" < /dev/tty
