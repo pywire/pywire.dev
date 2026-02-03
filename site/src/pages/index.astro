@@ -3,16 +3,36 @@ import DefaultLayout from '@layouts/DefaultLayout.astro'
 import Feature from '@components/Feature.astro'
 import { Heading, Link } from 'accessible-astro-components'
 import { Icon } from 'astro-icon/components'
-import { Code } from 'astro/components'
+import { createHighlighter } from 'shiki'
+import pywireGrammar from '../grammars/pywire.tmLanguage.json'
 
-const pywireCode = `<div class="counter">
-    <p>Count: {count}</p>
-    <button @click={count += 1}>
-        Add One
-    </button>
-</div>
----
-count = 0`
+const highlighter = await createHighlighter({
+  themes: ['github-dark', 'catppuccin-mocha'],
+  langs: [
+    'python',
+    {
+      ...pywireGrammar,
+      name: 'pywire',
+    } as any,
+  ],
+})
+
+
+const pywireCode = `count = wire(0)
+
+def increment():
+  $count += 1
+  
+--- html ---
+<p>Count: {count}</p>
+<button @click={increment}>
+    Add One
+</button>`
+
+const pywireHtml = highlighter.codeToHtml(pywireCode, {
+  lang: 'pywire',
+  theme: 'catppuccin-mocha',
+})
 ---
 
 <DefaultLayout title="Home">
@@ -31,7 +51,7 @@ count = 0`
               Get Started
             </Link>
             <Link
-              href="https://github.com/rholmdahl/pywire"
+              href="https://github.com/pywire/pywire"
               isButton
               type="secondary"
               animateOnHover
@@ -53,7 +73,7 @@ count = 0`
               <div class="h-3 w-3 rounded-full bg-green-500/50"></div>
               <span class="ml-2 font-mono text-xs text-[var(--theme-dark-muted)]">counter.wire</span>
             </div>
-            <Code code={pywireCode} lang="html" theme="github-dark" />
+            <Fragment set:html={pywireHtml} />
           </div>
         </div>
       </div>

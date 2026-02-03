@@ -19,7 +19,7 @@ const viteConfig = {
     preprocessorOptions: {
       scss: {
         logger: {
-          warn: () => {},
+          warn: () => { },
         },
       },
     },
@@ -94,5 +94,17 @@ export default defineConfig({
   site: 'https://pywire.dev',
   base: '/',
   integrations: [compress(), icon(), mdx(), sitemap()],
+  markdown: {
+    shikiConfig: {
+      langs: [
+        'python',
+        {
+          id: 'pywire',
+          scopeName: 'source.pywire',
+          path: './src/grammars/pywire.tmLanguage.json'
+        }
+      ]
+    }
+  },
   vite: viteConfig,
 })
