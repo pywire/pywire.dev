@@ -19,7 +19,7 @@ const viteConfig = {
     preprocessorOptions: {
       scss: {
         logger: {
-          warn: () => { },
+          warn: () => {},
         },
       },
     },
@@ -101,10 +101,10 @@ export default defineConfig({
         {
           id: 'pywire',
           scopeName: 'source.pywire',
-          path: './src/grammars/pywire.tmLanguage.json'
-        }
-      ]
-    }
+          path: './src/grammars/pywire.tmLanguage.json',
+        },
+      ],
+    },
   },
   vite: viteConfig,
 })

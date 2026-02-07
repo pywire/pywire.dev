@@ -17,7 +17,6 @@ const highlighter = await createHighlighter({
   ],
 })
 
-
 const pywireCode = `count = wire(0)
 
 def increment():
@@ -50,13 +49,7 @@ const pywireHtml = highlighter.codeToHtml(pywireCode, {
             <Link href="/docs/guides/quickstart/" isButton type="primary" animateOnHover animationType="boop">
               Get Started
             </Link>
-            <Link
-              href="https://github.com/pywire/pywire"
-              isButton
-              type="secondary"
-              animateOnHover
-              animationType="boop"
-            >
+            <Link href="https://github.com/pywire/pywire" isButton type="secondary" animateOnHover animationType="boop">
               <Icon aria-hidden="true" name="lucide:github" size="1.5rem" />
               View on GitHub
             </Link>

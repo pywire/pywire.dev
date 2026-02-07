@@ -52,6 +52,9 @@ export default [
         parser: '@typescript-eslint/parser',
         extraFileExtensions: ['.astro'],
       },
+      globals: {
+        Fragment: 'readonly',
+      },
     },
     rules: {
       ...astro.configs.recommended.rules,
