@@ -4,7 +4,7 @@ import Feature from '@components/Feature.astro'
 import { Heading, Link } from 'accessible-astro-components'
 import { Icon } from 'astro-icon/components'
 import { createHighlighter } from 'shiki'
-import pywireGrammar from '../grammars/pywire.tmLanguage.json'
+import pywireGrammar from '../../public/grammars/pywire.tmLanguage.json'
 
 const highlighter = await createHighlighter({
   themes: ['github-dark', 'catppuccin-mocha'],
