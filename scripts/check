@@ -1,10 +1,10 @@
 #!/bin/sh -e
 
 echo "-> Formatting check..."
-pnpm prettier --check .
+(cd site && pnpm format:check)
 
 echo "-> Linting..."
-pnpm eslint .
+(cd site && pnpm lint)
 
 echo "-> Type checking..."
-pnpm tsc --noEmit
+(cd site && pnpm typecheck)
