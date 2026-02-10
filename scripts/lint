@@ -5,3 +5,6 @@ echo "-> Formatting..."
 
 echo "-> Linting (with fixes)..."
 (cd site && pnpm lint:fix)
+
+echo "-> Type checking..."
+(cd site && pnpm typecheck)
