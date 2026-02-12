@@ -17,14 +17,11 @@ const highlighter = await createHighlighter({
   ],
 })
 
-const pywireCode = `count = wire(0)
-
-def increment():
-  $count += 1
-  
---- html ---
+const pywireCode = `---
+count = wire(0)
+---
 <p>Count: {count}</p>
-<button @click={increment}>
+<button @click={count.value += 1}>
     Add One
 </button>`
 
