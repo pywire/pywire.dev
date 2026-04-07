@@ -2,10 +2,6 @@ name: Deploy Landing Site
 
 on:
   push:
-    branches:
-      - main
-    tags:
-      - "v*"
 
 jobs:
   deploy-landing:
@@ -25,7 +21,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v2
         with:
-          version: 8
+          version: 9
 
       - name: Install dependencies
         working-directory: site
@@ -43,4 +39,4 @@ jobs:
           projectName: pywire-landing
           directory: site/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name == 'main' && 'nightly' || 'main' }}
+          branch: ${{ github.ref_name == 'main' && 'main' || 'nightly' }}
