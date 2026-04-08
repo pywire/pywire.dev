@@ -2,6 +2,9 @@ name: Deploy Landing Site
 
 on:
   push:
+    paths:
+      - 'site/**'
+      - 'worker/**'
 
 jobs:
   deploy-landing:
