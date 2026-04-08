@@ -104,7 +104,26 @@ resource "cloudflare_workers_route" "nightly" {
   script  = cloudflare_workers_script.router.script_name
 }
 
-# --- 5. Email Routing Setup ---
+# --- 5. Allow AI crawlers to LLM documentation files ---
+resource "cloudflare_ruleset" "allow_llm_crawlers" {
+  zone_id     = var.zone_id
+  name        = "Allow AI crawlers to LLM txt files"
+  description = "Bypass WAF and bot checks for AI fetch bots accessing LLM documentation files"
+  kind        = "zone"
+  phase       = "http_request_firewall_custom"
+
+  rules = [{
+    action = "skip"
+    action_parameters = {
+      ruleset = "current"
+    }
+    expression  = "(http.request.uri.path in {\"/llms.txt\" \"/llms-short.txt\" \"/llms-full.txt\"})"
+    description = "Allow AI crawlers to access LLM documentation files"
+    enabled     = true
+  }]
+}
+
+# --- 6. Email Routing Setup ---
 
 resource "cloudflare_email_routing_settings" "main" {
   zone_id = var.zone_id
