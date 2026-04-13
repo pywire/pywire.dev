@@ -59,13 +59,25 @@ resource "cloudflare_pages_project" "landing" {
   }
 }
 
-# --- 3. The Router (Worker) ---
+# --- 3. CDN Bucket (R2) ---
+resource "cloudflare_r2_bucket" "cdn" {
+  account_id = var.account_id
+  name       = "pywire-cdn"
+  location   = "WNAM"
+}
+
+# --- 4. The Router (Worker) ---
 resource "cloudflare_workers_script" "router" {
   account_id     = var.account_id
   script_name    = "pywire-router"
   content_file   = "../worker/src/index.js"
   content_sha256 = filesha256("../worker/src/index.js")
   main_module    = "index.js"
+
+  r2_buckets = [{
+    binding     = "CDN_BUCKET"
+    bucket_name = cloudflare_r2_bucket.cdn.name
+  }]
 }
 
 # --- Nightly Environment ---
@@ -91,7 +103,7 @@ resource "cloudflare_dns_record" "vscode_verification" {
 
 
 
-# --- 4. The DNS & Routing ---
+# --- 5. The DNS & Routing ---
 resource "cloudflare_workers_route" "catch_all" {
   zone_id = var.zone_id
   pattern = "pywire.dev/*"
@@ -104,7 +116,7 @@ resource "cloudflare_workers_route" "nightly" {
   script  = cloudflare_workers_script.router.script_name
 }
 
-# --- 5. Allow AI crawlers to LLM documentation files ---
+# --- 6. Allow AI crawlers to LLM documentation files ---
 resource "cloudflare_ruleset" "allow_llm_crawlers" {
   zone_id     = var.zone_id
   name        = "Allow AI crawlers to LLM txt files"
@@ -123,7 +135,7 @@ resource "cloudflare_ruleset" "allow_llm_crawlers" {
   }]
 }
 
-# --- 6. Email Routing Setup ---
+# --- 7. Email Routing Setup ---
 
 resource "cloudflare_email_routing_settings" "main" {
   zone_id = var.zone_id
