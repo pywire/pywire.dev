@@ -16,6 +16,8 @@ export default {
       const pkgName = path.slice('/cdn/simple/'.length).replace(/\/$/, '')
       if (!pkgName) return new Response('Not Found', { status: 404 })
       const listed = await env.CDN_BUCKET.list({ prefix: `${pkgName}/` })
+      if (listed.objects.length === 0)
+        return new Response('Not Found', { status: 404, headers: { 'Access-Control-Allow-Origin': '*' } })
       const links = listed.objects
         .map(obj => {
           const filename = obj.key.split('/').pop()
