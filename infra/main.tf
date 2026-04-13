@@ -74,8 +74,9 @@ resource "cloudflare_workers_script" "router" {
   content_sha256 = filesha256("../worker/src/index.js")
   main_module    = "index.js"
 
-  r2_buckets = [{
-    binding     = "CDN_BUCKET"
+  bindings = [{
+    name        = "CDN_BUCKET"
+    type        = "r2_bucket"
     bucket_name = cloudflare_r2_bucket.cdn.name
   }]
 }
