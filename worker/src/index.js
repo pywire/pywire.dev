@@ -25,7 +25,7 @@ export default {
       return new Response(
         `<!DOCTYPE html><html><head><title>Links for ${pkgName}</title></head>` +
         `<body><h1>Links for ${pkgName}</h1>\n${links}\n</body></html>`,
-        { headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Access-Control-Allow-Origin': '*' } }
       )
     }
 
@@ -39,6 +39,7 @@ export default {
         headers: {
           'Content-Type': contentType,
           'Cache-Control': 'public, max-age=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
         },
       })
     }
