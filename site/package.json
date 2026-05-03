@@ -67,6 +67,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.5.1",
+    "@iconify-json/simple-icons": "^1.2.80",
     "@tailwindcss/vite": "^4.1.13",
     "accessible-astro-components": "^5.1.1"
   }
