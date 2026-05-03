@@ -29,9 +29,7 @@ const {
     <!-- Enable Astro View Transitions for all browsers -->
     <ClientRouter />
   </head>
-  <body
-    class="bg-white bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] text-stone-900 dark:bg-[#090a11] dark:text-stone-100"
-  >
+  <body>
     <Header />
     <main id="main-content" transition:animate="fade">
       <slot />
@@ -60,7 +58,9 @@ const {
         }
       }
 
-      pre {
+      // Default <pre> styling for non-component code blocks (markdown pages).
+      // Scoped to main so the hero code-window's <pre> stays unstyled.
+      main pre:not(.shiki):not(.code-window-body pre) {
         border: 2px solid var(--link-color);
         border-radius: 0.35rem;
         padding: 1rem;

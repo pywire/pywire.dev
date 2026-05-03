@@ -1,66 +1,126 @@
 :root {
-  color-scheme: light;
+  color-scheme: light dark;
   interpolate-size: allow-keywords;
 
-  /* --- PRIMARY BRAND --- */
-  --color-wire-glow: #00f0ff;
-  --color-wire-dim: #00a8b3;
+  /* --- PRIMARY BRAND — "The Wire" ---
+     One OKLCH hue (195°), one chroma (0.13), three lightnesses.
+     Same formula as the neutral ladder: keep H + C identical across
+     modes, only invert L. Reads as one accent at two times of day. */
+  --color-wire-90: oklch(89% 0.13 195); /* Void primary  ≈ #5feaff */
+  --color-wire-65: oklch(65% 0.13 195); /* Lab primary   ≈ #00b3c4 */
+  --color-wire-55: oklch(55% 0.13 195); /* Lab AAA link  ≈ #00969f */
+  --color-wire-25: oklch(25% 0.13 195); /* Void accent-bg */
+  --color-wire-95: oklch(95% 0.05 195); /* Lab accent-bg */
+
+  /* Aliases kept for back-compat with components written before the rework. */
+  --color-wire-glow: var(--color-wire-90);
+  --color-wire-dim: var(--color-wire-65);
+  --color-wire-deep: var(--color-wire-55);
+
   --color-py-blue: #3776ab;
   --color-py-yellow: #ffd343;
 
-  /* --- DARK MODE (The "Void") --- */
-  --theme-dark-bg: #090a11;
-  --theme-dark-surface: rgba(19, 21, 32, 0.6);
-  --theme-dark-border: #2a2d3d;
-  --theme-dark-text: #e0e6ed;
-  --theme-dark-muted: #949cb0;
+  /* --- DARK MODE (The "Void") ---
+     Same hue/chroma as Lab so the palette feels like one space rotated. */
+  --theme-dark-bg: oklch(11% 0.01 250); /* ≈ #0a0c14 */
+  --theme-dark-surface: oklch(15% 0.012 250 / 0.7); /* ≈ rgba(18,20,30,.7) */
+  --theme-dark-surface-2: oklch(20% 0.015 250); /* ≈ #1b1e2c */
+  --theme-dark-border: oklch(28% 0.018 250); /* ≈ #2a2e40 */
+  --theme-dark-text: oklch(92% 0.012 250); /* ≈ #e3e6ee */
+  --theme-dark-muted: oklch(66% 0.02 250); /* ≈ #969db1 */
 
-  /* --- LIGHT MODE (The "Lab") --- */
-  --theme-light-bg: #ffffff;
-  --theme-light-surface: rgba(255, 255, 255, 0.6);
-  --theme-light-border: #0f172a; // Deep Navy for sharp borders
-  --theme-light-text: #0f172a; // Deep Navy
-  --theme-light-muted: #475569;
+  /* --- LIGHT MODE (The "Lab") ---
+     Built on a single OKLCH neutral hue (250°, very low chroma) so that
+     Lab and Void are perceptual mirrors along the L axis. */
+  --theme-light-bg: oklch(99% 0.005 250); /* ≈ #fdfdff */
+  --theme-light-surface: oklch(97.5% 0.006 250 / 0.7);
+  --theme-light-surface-2: oklch(95% 0.008 250); /* ≈ #eff1f6 */
+  --theme-light-border: oklch(89% 0.01 250); /* ≈ #d8dbe5 */
+  --theme-light-border-strong: oklch(20% 0.04 250); /* ≈ #0e1525 */
+  --theme-light-text: oklch(20% 0.04 250); /* ≈ #0e1525 */
+  --theme-light-muted: oklch(48% 0.025 250); /* ≈ #5d6577 */
 
   /* --- STATE COLORS --- */
   --color-success: #00ff9d;
   --color-error: #ff0055;
+  --color-warning: #ffd343;
 
   // brand colors
-  --brand-primary: var(--color-wire-glow);
-  --brand-secondary: var(--color-wire-dim);
+  --brand-primary: light-dark(var(--color-wire-65), var(--color-wire-90));
+  --brand-secondary: light-dark(var(--color-wire-55), oklch(94% 0.1 195));
   --brand-neutral: var(--theme-dark-muted);
 
   // color scheme mapping
   --foreground-color: light-dark(var(--theme-light-text), var(--theme-dark-text));
   --background-color: light-dark(var(--theme-light-bg), var(--theme-dark-bg));
   --surface-color: light-dark(var(--theme-light-surface), var(--theme-dark-surface));
+  --surface-2-color: light-dark(var(--theme-light-surface-2), var(--theme-dark-surface-2));
   --icon-color: light-dark(var(--theme-light-text), var(--theme-dark-text));
-  --link-color: light-dark(var(--color-wire-dim), var(--color-wire-glow));
-  --link-hover-color: light-dark(var(--color-wire-glow), var(--color-wire-dim));
+  --link-color: light-dark(var(--color-wire-55), var(--color-wire-90));
+  --link-hover-color: light-dark(var(--color-wire-65), oklch(94% 0.1 195));
+  --accent-color: light-dark(var(--color-wire-65), var(--color-wire-90));
+  --accent-bg-color: light-dark(var(--color-wire-95), var(--color-wire-25));
   --border-color: light-dark(var(--theme-light-border), var(--theme-dark-border));
-  --border-color-subtle: light-dark(rgba(15, 23, 42, 0.1), var(--theme-dark-border));
+  --border-color-subtle: light-dark(rgba(14, 21, 37, 0.08), rgba(227, 230, 238, 0.08));
+  --border-color-strong: light-dark(var(--theme-light-border-strong), var(--theme-dark-text));
   --text-decoration-color: light-dark(var(--theme-light-muted), var(--theme-dark-muted));
   --text-decoration-color-hover: var(--link-color);
+  --grid-line: light-dark(rgba(14, 21, 37, 0.06), rgba(227, 230, 238, 0.05));
+  --grid-line-strong: light-dark(rgba(14, 21, 37, 0.1), rgba(227, 230, 238, 0.09));
+
+  // glow tokens — matched intensity across modes.
+  // On Void this reads as a soft cyan halo; on Lab it reads as a quiet
+  // cool-ink lift at the same visual weight. Same recipe, both modes.
+  --glow-cyan-soft: 0 0 10px rgba(0, 200, 220, 0.18);
+  --glow-cyan: 0 0 14px rgba(0, 200, 220, 0.32);
+  --glow-cyan-loud: 0 0 22px rgba(0, 220, 240, 0.55), 0 0 1px rgba(0, 220, 240, 0.9);
+  --shadow-soft: 0 1px 2px rgba(14, 21, 37, 0.05), 0 4px 14px rgba(14, 21, 37, 0.06);
 
   // gradient tokens
   --text-gradient: linear-gradient(
     315deg,
-    light-dark(#0f172a, var(--color-wire-glow)) 25%,
-    light-dark(var(--color-wire-dim), #00d1b7)
+    light-dark(var(--theme-light-text), var(--color-wire-90)) 25%,
+    light-dark(var(--color-wire-65), oklch(85% 0.13 195))
   );
+
+  // ---- Button color tokens consumed by accessible-astro <Link isButton>.
+  // Primary = filled cyan (wire ladder); Secondary = outlined dark/light;
+  // Ghost = transparent. Same recipe in both modes — only the wire stop
+  // changes. Halo is added per-instance via .button--glow when needed.
+  --color-primary-bg: var(--accent-color);
+  --color-primary-border: var(--accent-color);
+  --color-primary-text: light-dark(#fff, oklch(15% 0.04 195));
+  --color-primary-bg-hover: var(--link-hover-color);
+  --color-primary-border-hover: var(--link-hover-color);
+  --color-primary-text-hover: var(--color-primary-text);
+
+  --color-secondary-bg: transparent;
+  --color-secondary-border: var(--foreground-color);
+  --color-secondary-text: var(--foreground-color);
+  --color-secondary-bg-hover: var(--accent-bg-color);
+  --color-secondary-border-hover: var(--accent-color);
+  --color-secondary-text-hover: var(--foreground-color);
+
+  --color-default-bg: transparent;
+  --color-default-border: var(--border-color);
+  --color-default-text: var(--foreground-color);
+  --color-default-bg-hover: var(--surface-2-color);
+  --color-default-border-hover: var(--border-color);
+  --color-default-text-hover: var(--foreground-color);
 
   // theme settings
   --radius-small: 3px;
   --radius-large: 6px;
   --gap-default: 2rem;
   --font-measure: 70ch;
-  --font-family-default: 'Atkinson Hyperlegible', sans-serif;
-  --font-family-special: 'Atkinson Hyperlegible', sans-serif;
+  --font-family-default: 'Atkinson Hyperlegible', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-family-special: 'Atkinson Hyperlegible', ui-sans-serif, system-ui, sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   // font families
   --font-heading: var(--font-family-special);
   --font-body: var(--font-family-default);
+  --font-mono: var(--font-family-mono);
 
   // font sizes
   // @link https://utopia.fyi/type/calculator?c=320,16,1.2,1240,18,1.25,6,2,&s=0.75|0.5|0.25,1.5|2|3|4|6,s-l&g=s,l,xl,12
