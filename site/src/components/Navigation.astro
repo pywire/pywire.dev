@@ -9,20 +9,24 @@ import Logo from './Logo.astro'
  */
 ---
 
-<div id="main-navigation" class="py-8">
+<div id="main-navigation">
   <div class="container">
     <Logo />
-    <div class="wrapper">
-      <nav class="desktop-menu" aria-label="Main navigation desktop">
-        <ul class="menu">
-          <slot />
-        </ul>
-      </nav>
-      <ResponsiveToggle />
-    </div>
+    <nav class="desktop-menu primary-nav" aria-label="Main navigation">
+      <ul class="menu">
+        <slot />
+      </ul>
+    </nav>
+    <nav class="desktop-menu secondary-nav" aria-label="Resources">
+      <ul class="menu">
+        <slot name="secondary" />
+      </ul>
+    </nav>
+    <ResponsiveToggle />
     <nav class="mobile-menu" aria-label="Main navigation mobile">
       <ul class="menu">
         <slot />
+        <slot name="secondary" />
       </ul>
     </nav>
   </div>
@@ -227,16 +231,20 @@ import Logo from './Logo.astro'
     background-color: light-dark(rgba(255, 255, 255, 0.8), rgba(9, 10, 17, 0.8));
 
     > .container {
-      display: flex;
-      justify-content: space-between;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
       align-items: center;
-      padding-block: 1rem;
+      /* Match docs nav height (56px). 32px logo chip + 12px top + 12px bottom = 56px. */
+      padding-block: 0.75rem;
+      column-gap: var(--space-m);
     }
 
-    .wrapper {
-      display: flex;
-      align-items: center;
-      gap: var(--space-l);
+    .primary-nav {
+      justify-self: center;
+    }
+
+    .secondary-nav {
+      justify-self: end;
     }
 
     .desktop-menu {
@@ -262,7 +270,7 @@ import Logo from './Logo.astro'
         a {
           transition: all var(--animation-speed-fast) var(--cubic-bezier);
           border-radius: var(--radius-small);
-          padding: 0.5rem;
+          padding: 0.3rem 0.5rem;
           color: var(--foreground-color);
           font-size: 0.9rem;
           font-family: var(--font-family-mono);
@@ -272,8 +280,8 @@ import Logo from './Logo.astro'
           &:hover,
           &:focus-visible,
           &.is-active {
-            background-color: light-dark(rgba(15, 23, 42, 0.05), rgba(0, 240, 255, 0.05));
-            color: var(--color-wire-glow);
+            background-color: var(--accent-bg-color);
+            color: var(--accent-color);
           }
         }
       }
@@ -283,16 +291,15 @@ import Logo from './Logo.astro'
       a {
         background: none !important;
         padding: 0 !important;
-        color: var(--foreground-color) !important;
+        color: var(--text-decoration-color) !important;
 
         &:hover {
-          transform: translateY(-1px);
-          color: var(--color-wire-glow) !important;
+          color: var(--accent-color) !important;
         }
 
         svg {
-          width: 24px;
-          height: 24px;
+          width: 18px;
+          height: 18px;
         }
       }
     }
