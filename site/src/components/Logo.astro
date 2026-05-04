@@ -32,31 +32,31 @@ import { Link } from 'accessible-astro-components'
     display: inline-flex;
     align-items: center;
     gap: 0.625rem;
+    transition: color var(--animation-speed-fast) var(--cubic-bezier);
     color: var(--accent-color);
-    text-decoration: none;
-    font-family: var(--font-mono);
     font-weight: 600;
     font-size: 1.125rem;
+    font-family: var(--font-mono);
     letter-spacing: -0.01em;
-    transition: color var(--animation-speed-fast) var(--cubic-bezier);
+    text-decoration: none;
   }
 
   // 32px rounded-square chip — accent-tinted background, 1.5px accent-edge.
   // On Void the chip glows; on Lab it stays a quiet brand frame.
   .logo-chip {
     display: inline-flex;
-    align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 7px;
-    padding: 4px;
+    align-items: center;
     box-sizing: border-box;
+    border: 1.5px solid color-mix(in oklch, var(--accent-color) 30%, transparent);
+    border-radius: 7px;
     background: light-dark(
       color-mix(in oklch, var(--accent-color) 8%, transparent),
       color-mix(in oklch, var(--accent-color) 10%, transparent)
     );
-    border: 1.5px solid color-mix(in oklch, var(--accent-color) 30%, transparent);
+    padding: 4px;
+    width: 32px;
+    height: 32px;
   }
 
   :root.darkmode .logo-chip {
@@ -66,9 +66,9 @@ import { Link } from 'accessible-astro-components'
   }
 
   .logo-mark {
-    height: 100%;
-    width: auto;
     display: block;
+    width: auto;
+    height: 100%;
   }
 
   :root.darkmode .logo-mark {

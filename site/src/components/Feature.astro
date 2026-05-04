@@ -42,11 +42,11 @@ const highlights = Array.isArray(highlight) ? highlight : highlight ? [highlight
     display: flex;
     flex-direction: column;
     gap: 0.875rem;
-    padding: 1.6rem 1.5rem;
-    background: var(--surface-color);
+    transition: border-color var(--animation-speed-fast) var(--cubic-bezier);
     border: 1px solid var(--border-color-subtle);
     border-radius: var(--radius-l);
-    transition: border-color var(--animation-speed-fast) var(--cubic-bezier);
+    background: var(--surface-color);
+    padding: 1.6rem 1.5rem;
 
     &:hover {
       border-color: var(--accent-color);
@@ -54,13 +54,13 @@ const highlights = Array.isArray(highlight) ? highlight : highlight ? [highlight
   }
 
   .feature-icon-chip {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    background: var(--accent-bg-color);
     width: 36px;
     height: 36px;
-    border-radius: 8px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--accent-bg-color);
     color: var(--accent-color);
 
     :global([data-icon]) {
@@ -83,12 +83,12 @@ const highlights = Array.isArray(highlight) ? highlight : highlight ? [highlight
     text-wrap: pretty;
 
     :global(code) {
-      font-family: var(--font-mono);
-      font-size: 0.85em;
-      color: var(--accent-color);
+      border-radius: var(--radius-s);
       background: var(--accent-bg-color);
       padding: 0.05em 0.35em;
-      border-radius: var(--radius-s);
+      color: var(--accent-color);
+      font-size: 0.85em;
+      font-family: var(--font-mono);
     }
   }
 
@@ -100,11 +100,11 @@ const highlights = Array.isArray(highlight) ? highlight : highlight ? [highlight
   }
 
   .feature-highlight {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    color: var(--accent-color);
+    border-radius: var(--radius-s);
     background: var(--accent-bg-color);
     padding: 0.3rem 0.55rem;
-    border-radius: var(--radius-s);
+    color: var(--accent-color);
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
   }
 </style>
