@@ -273,7 +273,10 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     margin: 0.5rem 0 var(--space-l);
     max-width: 38ch;
     font-weight: 600;
+    font-size: clamp(1.5rem, 0.75rem + 3vw, 2.5rem) !important;
+    line-height: 1.15;
     letter-spacing: -0.025em;
+    text-wrap: balance;
   }
 
   .features-grid {
