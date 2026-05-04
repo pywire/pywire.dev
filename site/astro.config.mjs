@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 import { existsSync, lstatSync } from 'fs'
 import { resolve } from 'path'
 import compress from 'astro-compress'
+import favicons from 'astro-favicons'
 import icon from 'astro-icon'
 import mdx from '@astrojs/mdx'
 import sitemap from '@astrojs/sitemap'
@@ -93,7 +94,17 @@ export default defineConfig({
   compressHTML: true,
   site: 'https://pywire.dev',
   base: '/',
-  integrations: [compress(), icon(), mdx(), sitemap()],
+  integrations: [
+    compress(),
+    favicons({
+      name: 'PyWire',
+      short_name: 'PyWire',
+      themes: ['#1e1e2e', '#eff1f5'],
+    }),
+    icon(),
+    mdx(),
+    sitemap(),
+  ],
   markdown: {
     shikiConfig: {
       langs: [
