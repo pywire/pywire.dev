@@ -69,6 +69,7 @@ import { Icon } from 'astro-icon/components'
       transition: border-color var(--animation-speed-fast) var(--cubic-bezier);
       cursor: pointer;
       margin: 0;
+      outline: none;
       border: 1px solid var(--border-color);
       border-radius: 6px;
       background: transparent;
@@ -82,6 +83,10 @@ import { Icon } from 'astro-icon/components'
       &:focus-visible {
         border-color: var(--accent-color);
         color: var(--accent-color);
+      }
+
+      &:focus-visible {
+        box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent-color) 35%, transparent);
       }
 
       .icon-light,
