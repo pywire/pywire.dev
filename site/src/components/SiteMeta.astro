@@ -19,8 +19,7 @@ interface Props {
 const { title, description, url, image, author = 'PyWire' } = Astro.props
 
 const siteName = 'PyWire'
-const tagline = 'The Live Conduit for Python'
-const fullTitle = title ? `${title} | ${siteName}` : `${siteName} — ${tagline}`
+const fullTitle = title ? `${title} · ${siteName}` : siteName
 ---
 
 <!-- general meta -->
