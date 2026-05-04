@@ -40,21 +40,15 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   <section class="hero">
     <div class="hero-grid-bg" aria-hidden="true"></div>
     <div class="hero-radial-wash" aria-hidden="true"></div>
-    <div class="container hero-container">
-      <div class="grid grid-cols-1 items-center gap-24 lg:grid-cols-2">
+    <div class="hero-container container">
+      <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-24">
         <div class="flex flex-col items-center gap-8 md:items-start">
           <h1 class="hero-headline">
             The <span class="accent-text">Live<br />Conduit</span><br />for Python
           </h1>
           <p class="hero-sub">HTML-over-the-wire without the JavaScript hangover.</p>
           <div class="flex flex-col gap-3 min-[500px]:flex-row">
-            <Link
-              href="/docs/guides/quickstart/"
-              isButton
-              type="secondary"
-              variant="outlined"
-              class="cta-secondary"
-            >
+            <Link href="/docs/guides/quickstart/" isButton type="secondary" variant="outlined" class="cta-secondary">
               Get started
               <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
             </Link>
@@ -122,8 +116,12 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   // matched-intensity halo recipes for both modes.
   .hero {
     position: relative;
-    padding: var(--space-2xl) 0 var(--space-3xl);
+    padding: var(--space-xl) 0 var(--space-2xl);
     overflow: visible;
+
+    @media (min-width: 768px) {
+      padding: var(--space-2xl) 0 var(--space-3xl);
+    }
   }
 
   // Engineering graph paper grid: 32px minor cells, 128px major cells.
@@ -132,11 +130,15 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   .hero-grid-bg {
     position: absolute;
     top: 0;
-    left: 0;
     right: 0;
     bottom: -8rem;
+    left: 0;
     z-index: -1;
-    pointer-events: none;
+    // Soft fade to bg before the "Why pywire" section so the grid doesn't
+    // collide with prose. Opaque through the headline/CTA band, then a
+    // gradual wash to transparent in the lower third.
+    mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
     background-image:
       linear-gradient(var(--grid-line) 1px, transparent 1px),
       linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
@@ -147,11 +149,7 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
       32px 32px,
       128px 128px,
       128px 128px;
-    // Soft fade to bg before the "Why pywire" section so the grid doesn't
-    // collide with prose. Opaque through the headline/CTA band, then a
-    // gradual wash to transparent in the lower third.
-    mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+    pointer-events: none;
   }
 
   // Removed radial wash — was creating a "two competing backgrounds"
@@ -166,21 +164,21 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 
   .hero-headline {
     margin: 0;
-    font-family: var(--font-heading);
-    font-weight: 700;
-    font-size: clamp(2.75rem, 1.5rem + 6vw, 5.5rem);
-    line-height: 1.02;
-    letter-spacing: -0.035em;
     color: var(--foreground-color);
+    font-weight: 700;
+    font-size: clamp(2.25rem, 1rem + 6vw, 5.5rem);
+    line-height: 1.02;
+    font-family: var(--font-heading);
+    letter-spacing: -0.035em;
     text-wrap: balance;
   }
 
   .hero-sub {
     margin: 0;
     max-width: 28rem;
+    color: var(--text-decoration-color);
     font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
     line-height: 1.5;
-    color: var(--text-decoration-color);
     text-wrap: pretty;
   }
 
@@ -191,35 +189,34 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
   }
 
-
   // macOS-chrome code window — adapts to Lab / Void per components/code-window.
   // Lab: light surface, light syntax theme. Void: dark surface, dark syntax.
   // Same recipe: 1px accent ring + soft accent-tint halo at matched intensity.
   .code-window {
     position: relative;
-    border-radius: var(--radius-l);
-    overflow: hidden;
-    font-family: var(--font-mono);
-    background: light-dark(var(--theme-light-surface-2), #1c1f2e);
-    border: 1px solid var(--border-color);
     box-shadow:
       0 0 0 1px color-mix(in oklch, var(--accent-color) 30%, transparent),
       0 8px 24px color-mix(in oklch, var(--accent-color) 12%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-l);
+    background: light-dark(var(--theme-light-surface-2), #1c1f2e);
+    overflow: hidden;
+    font-family: var(--font-mono);
   }
 
   .code-window-chrome {
     display: flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.65rem 0.9rem;
-    background: light-dark(var(--theme-light-surface), #252839);
     border-bottom: 1px solid var(--border-color);
+    background: light-dark(var(--theme-light-surface), #252839);
+    padding: 0.65rem 0.9rem;
 
     .dot {
+      display: inline-block;
+      border-radius: 50%;
       width: 11px;
       height: 11px;
-      border-radius: 50%;
-      display: inline-block;
     }
 
     .dot-red {
@@ -236,8 +233,8 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 
     .filename {
       margin-left: 0.5rem;
-      font-size: 0.78rem;
       color: var(--text-decoration-color);
+      font-size: 0.78rem;
       font-family: var(--font-mono);
     }
   }
@@ -248,8 +245,8 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     line-height: 1.6;
 
     :global(pre) {
-      background: transparent !important;
       margin: 0;
+      background: transparent !important;
       overflow-x: auto;
     }
   }
@@ -280,10 +277,10 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   }
 
   .features-grid {
-    margin-top: var(--space-l);
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-m);
+    margin-top: var(--space-l);
 
     @media (min-width: 800px) {
       grid-template-columns: repeat(3, 1fr);
@@ -292,26 +289,26 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 
   .eyebrow {
     margin: 0 0 0.6rem;
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
     color: var(--accent-color);
     font-weight: 500;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   // Hero CTA buttons — defeat accessible-astro's default 3px borders & big
   // padding so the pair matches the design (compact, 1.5px, the new tokens).
   :global(.cta-primary),
   :global(.cta-secondary) {
-    border-width: 1.5px !important;
-    padding: 0.65rem 1.1rem !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    border-radius: 8px !important;
     display: inline-flex !important;
     align-items: center !important;
     gap: 0.5rem !important;
+    border-width: 1.5px !important;
+    border-radius: 8px !important;
+    padding: 0.65rem 1.1rem !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
     line-height: 1 !important;
   }
 
@@ -329,4 +326,3 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     padding: var(--space-s);
   }
 </style>
-

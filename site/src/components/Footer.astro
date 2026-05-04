@@ -9,7 +9,7 @@ const currentYear = new Date().getFullYear()
 ---
 
 <footer class="site-footer">
-  <div class="container footer-grid">
+  <div class="footer-grid container">
     <div class="footer-lockup">
       <Logo loading="lazy" />
       <p class="footer-tagline">HTML-over-the-wire for Python. Apache 2.0 licensed. Built in the open.</p>
@@ -41,7 +41,7 @@ const currentYear = new Date().getFullYear()
       </section>
     </div>
   </div>
-  <div class="container footer-baseline">
+  <div class="footer-baseline container">
     <p>&copy; {currentYear} pywire</p>
     <p>Made for the Python community.</p>
   </div>
@@ -49,10 +49,15 @@ const currentYear = new Date().getFullYear()
 
 <style lang="scss">
   .site-footer {
-    margin-top: var(--space-3xl);
-    padding: var(--space-2xl) 0 var(--space-xl);
-    background: var(--surface-2-color);
+    margin-top: var(--space-2xl);
     border-top: 1px solid var(--border-color-subtle);
+    background: var(--surface-2-color);
+    padding: var(--space-xl) 0 var(--space-l);
+
+    @media (min-width: 768px) {
+      margin-top: var(--space-3xl);
+      padding: var(--space-2xl) 0 var(--space-xl);
+    }
   }
 
   .footer-grid {
@@ -74,34 +79,30 @@ const currentYear = new Date().getFullYear()
   .footer-tagline {
     margin: 0;
     max-width: 18rem;
+    color: var(--text-decoration-color);
     font-size: 0.85rem;
     line-height: 1.55;
-    color: var(--text-decoration-color);
   }
 
   .footer-cols {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
     gap: var(--space-m);
-
-    @media (max-width: 500px) {
-      grid-template-columns: 1fr;
-    }
 
     section {
       ul {
-        margin: 0;
-        padding: 0;
-        list-style: none;
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
       }
 
       a {
         color: var(--foreground-color);
-        text-decoration: none;
         font-size: 0.9rem;
+        text-decoration: none;
 
         &:hover {
           color: var(--accent-color);
@@ -112,23 +113,23 @@ const currentYear = new Date().getFullYear()
 
   .footer-heading {
     margin: 0 0 0.75rem;
-    font-family: var(--font-mono);
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
     color: var(--text-decoration-color);
     font-weight: 500;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
   }
 
   .footer-baseline {
-    margin-top: var(--space-xl);
-    padding-top: var(--space-m);
-    border-top: 1px solid var(--border-color-subtle);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    font-size: 0.85rem;
+    margin-top: var(--space-xl);
+    border-top: 1px solid var(--border-color-subtle);
+    padding-top: var(--space-m);
     color: var(--text-decoration-color);
+    font-size: 0.85rem;
 
     @media (min-width: 700px) {
       flex-direction: row;

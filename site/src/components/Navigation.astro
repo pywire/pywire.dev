@@ -24,8 +24,10 @@ import Logo from './Logo.astro'
     </nav>
     <ResponsiveToggle />
     <nav class="mobile-menu" aria-label="Main navigation mobile">
-      <ul class="menu">
+      <ul class="menu mobile-menu-primary">
         <slot />
+      </ul>
+      <ul class="menu mobile-menu-secondary">
         <slot name="secondary" />
       </ul>
     </nav>
@@ -232,11 +234,15 @@ import Logo from './Logo.astro'
 
     > .container {
       display: grid;
-      grid-template-columns: 1fr auto 1fr;
+      grid-template-columns: auto 1fr auto;
+      column-gap: var(--space-m);
       align-items: center;
       /* Match docs nav height (56px). 32px logo chip + 12px top + 12px bottom = 56px. */
       padding-block: 0.75rem;
-      column-gap: var(--space-m);
+
+      @include breakpoint('nav') {
+        grid-template-columns: 1fr auto 1fr;
+      }
     }
 
     .primary-nav {
@@ -304,19 +310,69 @@ import Logo from './Logo.astro'
       }
     }
 
-    /* Mobile handling simplifies for toolbar */
+    /* Mobile drawer — sheet under the sticky nav.
+       Primary links stack vertically (compact, mono); secondary icons
+       sit on a single horizontal row at the bottom. */
     .mobile-menu {
       display: none;
 
       &.show {
-        display: block;
+        display: flex;
         position: absolute;
         top: 100%;
         right: 0;
         left: 0;
+        flex-direction: column;
+        gap: var(--space-s);
+        backdrop-filter: blur(16px);
         border-bottom: 1px solid var(--border-color-subtle);
-        background: var(--background-color);
-        padding: 1rem;
+        background-color: light-dark(rgba(255, 255, 255, 0.98), rgba(9, 10, 17, 0.98));
+        padding: var(--space-s) var(--grid-gutter) var(--space-m);
+      }
+
+      .mobile-menu-primary {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+
+        li {
+          width: 100%;
+        }
+
+        a {
+          display: block;
+          border-radius: var(--radius-small);
+          padding: 0.6rem 0.5rem;
+          font-size: 0.95rem;
+        }
+      }
+
+      .mobile-menu-secondary {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 0.25rem;
+        border-top: 1px solid var(--border-color-subtle);
+        padding-top: var(--space-s);
+
+        li {
+          flex: 0 0 auto;
+        }
+
+        li:has(.darkmode-toggle) {
+          margin-inline-start: auto;
+        }
+
+        .type-icon a {
+          display: inline-flex;
+          justify-content: center;
+          align-items: center;
+          padding: 0.5rem !important;
+          min-width: 40px;
+          min-height: 40px;
+        }
       }
     }
   }
