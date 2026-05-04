@@ -70,17 +70,28 @@ const { class: className } = Astro.props
   @use '../assets/scss/base/breakpoint' as *;
 
   .responsive-toggle {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    justify-self: end;
+    cursor: pointer;
     border: none;
     background: transparent;
     padding: 0;
+    color: var(--foreground-color);
+
+    @include breakpoint('nav') {
+      display: none;
+    }
 
     span {
       margin-inline-end: var(--space-3xs);
+      font-size: 0.9rem;
+      font-family: var(--font-mono);
+      text-transform: lowercase;
     }
 
     svg {
-      width: 30px;
+      width: 24px;
 
       path {
         transition: fill var(--animation-speed-fast) var(--cubic-bezier);
@@ -88,11 +99,10 @@ const { class: className } = Astro.props
     }
 
     &:where(:hover, :focus-visible) {
-      span {
-        text-decoration: underline;
-        text-decoration-style: wavy;
-        text-decoration-thickness: 1px;
-        text-underline-offset: 7px;
+      color: var(--accent-color);
+
+      :global(path) {
+        stroke: var(--accent-color);
       }
     }
   }

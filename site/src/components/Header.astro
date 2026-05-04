@@ -22,19 +22,25 @@ import { Icon } from 'astro-icon/components'
     <li class="menu-item">
       <Link href="/docs/reference/api/">API</Link>
     </li>
-    <li class="menu-item type-icon">
-      <Link isExternal href="https://github.com/pywire/pywire" title="GitHub">
+    <li class="menu-item type-icon" slot="secondary">
+      <Link isExternal hideIcon href="https://github.com/pywire/pywire" title="GitHub">
         <Icon aria-hidden="true" name="lucide:github" />
         <span class="sr-only">GitHub</span>
       </Link>
     </li>
-    <li class="menu-item type-icon">
-      <Link isExternal href="https://discord.gg/pywire" title="Discord">
-        <Icon aria-hidden="true" name="lucide:message-square" />
+    <li class="menu-item type-icon" slot="secondary">
+      <Link isExternal hideIcon href="https://discord.gg/pywire" title="Discord">
+        <Icon aria-hidden="true" name="simple-icons:discord" />
         <span class="sr-only">Discord</span>
       </Link>
     </li>
-    <li class="menu-item type-icon">
+    <li class="menu-item type-icon" slot="secondary">
+      <Link isExternal hideIcon href="#" title="Discussions">
+        <Icon aria-hidden="true" name="lucide:message-square" />
+        <span class="sr-only">Discussions</span>
+      </Link>
+    </li>
+    <li class="menu-item type-icon" slot="secondary">
       <DarkMode>
         <Icon aria-hidden="true" name="lucide:moon" slot="light" />
         <Icon aria-hidden="true" name="lucide:sun" slot="dark" />
@@ -47,11 +53,50 @@ import { Icon } from 'astro-icon/components'
   header {
     .type-icon {
       display: block;
-      margin-inline: -7px;
+      margin-inline: 0;
 
       svg {
-        inline-size: 30px;
-        block-size: 30px;
+        inline-size: 18px;
+        block-size: 18px;
+      }
+    }
+
+    /* Compact theme toggle — 28px square chip, accent on hover. Perfectly
+       centered icon via grid place-items. */
+    .darkmode-toggle {
+      display: grid;
+      place-items: center;
+      transition: border-color var(--animation-speed-fast) var(--cubic-bezier);
+      cursor: pointer;
+      margin: 0;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      background: transparent;
+      padding: 0;
+      width: 28px;
+      height: 28px;
+      color: var(--foreground-color);
+      line-height: 0;
+
+      &:hover,
+      &:focus-visible {
+        border-color: var(--accent-color);
+        color: var(--accent-color);
+      }
+
+      .icon-light,
+      .icon-dark {
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      svg,
+      .icon svg {
+        display: block;
+        width: 14px !important;
+        height: 14px !important;
       }
     }
   }

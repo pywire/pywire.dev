@@ -7,11 +7,11 @@ import Footer from '@components/Footer.astro'
 import { ClientRouter } from 'astro:transitions'
 
 const {
-  title = 'Accessible Astro',
-  description = 'A starter project with accessibility features using Astro static site builder. Contains accessible landmarks, skip links, a dark mode color scheme, better focus outline and keyboard menu navigation.',
+  title,
+  description = 'PyWire is HTML-over-the-wire for Python — fine-grained reactivity, .wire single-file components, and live DOM streamed over WebSocket, WebTransport, or HTTP long polling. Apache 2.0.',
   url = Astro.site,
   image = 'social-preview-image.png',
-  author = 'Incluud',
+  author = 'PyWire',
 } = Astro.props
 ---
 
@@ -21,17 +21,12 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
 
-    <!-- favicon -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-
     <SiteMeta title={title} description={description.substring(0, 100)} url={url} image={image} author={author} />
 
     <!-- Enable Astro View Transitions for all browsers -->
     <ClientRouter />
   </head>
-  <body
-    class="bg-white bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] text-stone-900 dark:bg-[#090a11] dark:text-stone-100"
-  >
+  <body>
     <Header />
     <main id="main-content" transition:animate="fade">
       <slot />
@@ -60,7 +55,9 @@ const {
         }
       }
 
-      pre {
+      // Default <pre> styling for non-component code blocks (markdown pages).
+      // Scoped to main so the hero code-window's <pre> stays unstyled.
+      main pre:not(.shiki):not(.code-window-body pre) {
         border: 2px solid var(--link-color);
         border-radius: 0.35rem;
         padding: 1rem;

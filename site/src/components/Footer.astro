@@ -1,55 +1,143 @@
 ---
 import Logo from './Logo.astro'
-import { Heading, Link } from 'accessible-astro-components'
 
 /**
- * Footer Component
- *
- * @description A component that displays the footer of the website
+ * Footer — minimal, monoface eyebrow column headers, lockup at the left.
+ * Apache 2.0-licensed badge + copyright line in the bottom row.
  */
 const currentYear = new Date().getFullYear()
 ---
 
-<footer>
-  <section class="py-20">
-    <Heading level="h2" class="sr-only">Footer</Heading>
-    <div class="container grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-      <div class="flex flex-col gap-4">
-        <Heading level="h3" size="h6">Resources</Heading>
-        <ul class="flex flex-col gap-2">
-          <li><Link isExternal href="/docs/guides/quickstart/">Documentation</Link></li>
-          <li><Link isExternal href="/docs/reference/api/">API Reference</Link></li>
-          <li><Link isExternal href="https://github.com/pywire/pywire">GitHub Repository</Link></li>
-        </ul>
-      </div>
-      <div class="flex flex-col gap-4">
-        <Heading level="h3" size="h6">Community</Heading>
-        <ul class="flex flex-col gap-2">
-          <li><Link isExternal href="https://github.com/pywire/pywire/discussions">Discussions</Link></li>
-          <li><Link isExternal href="#">Discord (TBA)</Link></li>
-        </ul>
-      </div>
-      <div class="flex flex-col gap-4">
-        <Logo loading="lazy" />
-        <p class="leading-[1.75]">
-          pywire: The Live Conduit for Python. <br />
-          Built for speed, developer experience, and the "Always On" web.
-        </p>
-      </div>
+<footer class="site-footer">
+  <div class="footer-grid container">
+    <div class="footer-lockup">
+      <Logo loading="lazy" />
+      <p class="footer-tagline">HTML-over-the-wire for Python. Apache 2.0 licensed. Built in the open.</p>
     </div>
-  </section>
-  <section class="py-8">
-    <div class="container flex flex-col gap-4 md:flex-row md:justify-between">
-      <p>
-        &copy; {currentYear} pywire. All rights reserved.
-      </p>
-      <p>Made with ❤️ for the Python community.</p>
+    <div class="footer-cols">
+      <section>
+        <p class="footer-heading">Learn</p>
+        <ul>
+          <li><a href="/docs/guides/quickstart/">Quickstart</a></li>
+          <li><a href="/docs/tutorial/">Tutorial</a></li>
+          <li><a href="/docs/reference/api/">API Reference</a></li>
+        </ul>
+      </section>
+      <section>
+        <p class="footer-heading">Community</p>
+        <ul>
+          <li><a href="https://github.com/pywire/pywire">GitHub</a></li>
+          <li><a href="https://github.com/pywire/pywire/discussions">Discussions</a></li>
+          <li><a href="#">Discord</a></li>
+        </ul>
+      </section>
+      <section>
+        <p class="footer-heading">Project</p>
+        <ul>
+          <li><a href="/docs/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/pywire/pywire/blob/main/LICENSE">License (Apache 2.0)</a></li>
+          <li><a href="#">Security</a></li>
+        </ul>
+      </section>
     </div>
-  </section>
+  </div>
+  <div class="footer-baseline container">
+    <p>&copy; {currentYear} pywire</p>
+    <p>Made for the Python community.</p>
+  </div>
 </footer>
 
-<style>
-  section {
+<style lang="scss">
+  .site-footer {
+    margin-top: var(--space-2xl);
     border-top: 1px solid var(--border-color-subtle);
+    background: var(--surface-2-color);
+    padding: var(--space-xl) 0 var(--space-l);
+
+    @media (min-width: 768px) {
+      margin-top: var(--space-3xl);
+      padding: var(--space-2xl) 0 var(--space-xl);
+    }
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-l);
+
+    @media (min-width: 700px) {
+      grid-template-columns: 1fr 2fr;
+    }
+  }
+
+  .footer-lockup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+  }
+
+  .footer-tagline {
+    margin: 0;
+    max-width: 18rem;
+    color: var(--text-decoration-color);
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+
+  .footer-cols {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+    gap: var(--space-m);
+
+    section {
+      ul {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      a {
+        color: var(--foreground-color);
+        font-size: 0.9rem;
+        text-decoration: none;
+
+        &:hover {
+          color: var(--accent-color);
+        }
+      }
+    }
+  }
+
+  .footer-heading {
+    margin: 0 0 0.75rem;
+    color: var(--text-decoration-color);
+    font-weight: 500;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .footer-baseline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: var(--space-xl);
+    border-top: 1px solid var(--border-color-subtle);
+    padding-top: var(--space-m);
+    color: var(--text-decoration-color);
+    font-size: 0.85rem;
+
+    @media (min-width: 700px) {
+      flex-direction: row;
+      justify-content: space-between;
+    }
+
+    p {
+      margin: 0;
+    }
   }
 </style>

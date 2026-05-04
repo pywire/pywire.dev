@@ -1,22 +1,124 @@
 ---
 import DefaultLayout from '@layouts/DefaultLayout.astro'
-import { Heading, Link } from 'accessible-astro-components'
+import { Link } from 'accessible-astro-components'
 import { Icon } from 'astro-icon/components'
 ---
 
-<DefaultLayout title="404">
-  <section class="my-12">
-    <div class="container">
-      <Heading level="h1">404</Heading>
-    </div>
-  </section>
-  <section class="my-12">
-    <div class="space-content container">
-      <p class="text-2xl">This page does not exist. Don't worry though, we got you.</p>
-      <Link href="/" isButton type="primary" animateOnHover animationType="nudge">
-        Let's get you home, Astronaut
-        <Icon aria-hidden="true" name="lucide:rocket" size="1.5rem" />
-      </Link>
+<DefaultLayout title="Not found">
+  <section class="notfound">
+    <div class="notfound-grid-bg" aria-hidden="true"></div>
+    <div class="notfound-container container">
+      <p class="notfound-eyebrow">404</p>
+      <h1 class="notfound-headline">This route doesn't <span class="accent-text">wire</span> up.</h1>
+      <p class="notfound-sub">
+        The page you're looking for has either moved, been renamed, or never existed. Either way, let's get you back to
+        something that works.
+      </p>
+      <div class="notfound-actions">
+        <Link href="/" isButton type="secondary" variant="outlined" class="cta-secondary">
+          <Icon aria-hidden="true" name="lucide:arrow-left" size="1.1rem" />
+          Back to home
+        </Link>
+        <Link href="/docs/guides/quickstart/" isButton type="primary" class="cta-primary">
+          Read the docs
+          <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
+        </Link>
+      </div>
     </div>
   </section>
 </DefaultLayout>
+
+<style lang="scss">
+  .notfound {
+    position: relative;
+    padding: var(--space-2xl) 0 var(--space-3xl);
+    overflow: hidden;
+  }
+
+  .notfound-grid-bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: -1;
+    mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+  }
+
+  .notfound-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-m);
+    max-width: 40rem;
+  }
+
+  .notfound-eyebrow {
+    margin: 0;
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 0.85rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+
+  .notfound-headline {
+    margin: 0;
+    color: var(--foreground-color);
+    font-weight: 700;
+    font-size: clamp(2.25rem, 1rem + 5vw, 4rem);
+    line-height: 1.05;
+    font-family: var(--font-heading);
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .accent-text {
+    color: var(--accent-color);
+    text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
+  }
+
+  .notfound-sub {
+    margin: 0;
+    max-width: 32rem;
+    color: var(--text-decoration-color);
+    font-size: clamp(1rem, 0.95rem + 0.3vw, 1.15rem);
+    line-height: 1.55;
+    text-wrap: pretty;
+  }
+
+  .notfound-actions {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  :global(.cta-primary),
+  :global(.cta-secondary) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    border-width: 1.5px !important;
+    border-radius: 8px !important;
+    padding: 0.65rem 1.1rem !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    line-height: 1 !important;
+  }
+
+  :global(.cta-primary) {
+    box-shadow: var(--glow-cyan-soft);
+  }
+
+  :global(.cta-primary:hover) {
+    box-shadow: var(--glow-cyan);
+  }
+</style>

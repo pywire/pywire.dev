@@ -7,7 +7,7 @@ import { createHighlighter } from 'shiki'
 import pywireGrammar from '../../public/grammars/pywire.tmLanguage.json'
 
 const highlighter = await createHighlighter({
-  themes: ['github-dark', 'catppuccin-mocha'],
+  themes: ['catppuccin-latte', 'catppuccin-mocha'],
   langs: [
     'python',
     {
@@ -25,65 +25,85 @@ count = wire(0)
     Add One
 </button>`
 
-const pywireHtml = highlighter.codeToHtml(pywireCode, {
+const pywireHtmlDark = highlighter.codeToHtml(pywireCode, {
   lang: 'pywire',
   theme: 'catppuccin-mocha',
 })
+
+const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
+  lang: 'pywire',
+  theme: 'catppuccin-latte',
+})
 ---
 
-<DefaultLayout title="Home">
-  <section class="hero my-24">
-    <div class="container">
-      <div class="grid grid-cols-1 items-center gap-24 lg:grid-cols-2">
-        <div class="flex flex-col items-center gap-8 md:items-start">
-          <h1 class="text-center text-6xl md:text-left lg:text-8xl">
-            The <span class="text-gradient">Live Conduit</span> for Python
+<DefaultLayout>
+  <section class="hero">
+    <div class="hero-grid-bg" aria-hidden="true"></div>
+    <div class="hero-radial-wash" aria-hidden="true"></div>
+    <div class="hero-container container">
+      <div class="grid grid-cols-1 items-center gap-8 md:gap-12 lg:grid-cols-2 lg:gap-24">
+        <div class="flex flex-col items-start gap-5 md:gap-8">
+          <h1 class="hero-headline">
+            The <span class="accent-text">Live Conduit</span> for Python
           </h1>
-          <p class="text-center text-2xl md:text-left lg:text-3xl">
-            HTML-over-the-wire without the JavaScript hangover.
-          </p>
-          <div class="flex flex-col gap-3 min-[500px]:flex-row">
-            <Link href="/docs/guides/quickstart/" isButton type="primary" animateOnHover animationType="boop">
-              Get Started
+          <p class="hero-sub">HTML-over-the-wire without the JavaScript hangover.</p>
+          <div class="flex flex-row flex-wrap gap-3">
+            <Link href="/docs/guides/quickstart/" isButton type="secondary" variant="outlined" class="cta-secondary">
+              Get started
+              <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
             </Link>
-            <Link href="https://github.com/pywire/pywire" isButton type="secondary" animateOnHover animationType="boop">
-              <Icon aria-hidden="true" name="lucide:github" size="1.5rem" />
+            <Link
+              href="https://github.com/pywire/pywire"
+              isButton
+              type="primary"
+              isExternal
+              hideIcon
+              class="cta-primary"
+            >
+              <Icon aria-hidden="true" name="lucide:github" size="1.1rem" />
               View on GitHub
             </Link>
           </div>
         </div>
-        <div class="hero-code-block relative">
-          <div class="absolute -inset-4 rounded-full bg-cyan-500/10 blur-2xl"></div>
-          <div
-            class="relative rounded-lg border border-[var(--theme-dark-border)] bg-[var(--theme-dark-surface)] p-6 shadow-2xl"
-          >
-            <div class="mb-4 flex gap-2">
-              <div class="h-3 w-3 rounded-full bg-red-500/50"></div>
-              <div class="h-3 w-3 rounded-full bg-yellow-500/50"></div>
-              <div class="h-3 w-3 rounded-full bg-green-500/50"></div>
-              <span class="ml-2 font-mono text-xs text-[var(--theme-dark-muted)]">counter.wire</span>
+        <div class="hero-code-block">
+          <div class="code-window">
+            <div class="code-window-chrome">
+              <span class="dot dot-red"></span>
+              <span class="dot dot-yellow"></span>
+              <span class="dot dot-green"></span>
+              <span class="filename">counter.wire</span>
             </div>
-            <Fragment set:html={pywireHtml} />
+            <div class="code-window-body code-window-body--dark">
+              <Fragment set:html={pywireHtmlDark} />
+            </div>
+            <div class="code-window-body code-window-body--light">
+              <Fragment set:html={pywireHtmlLight} />
+            </div>
           </div>
         </div>
       </div>
     </div>
   </section>
-  <section class="my-64">
+  <section class="features-section">
     <div class="container">
-      <Heading level="h2" class="mb-8">The "Always On" Experience</Heading>
-      <div class="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-3">
-        <Feature icon="lucide:zap" title="Instant Reactivity">
-          Real-time updates without the page refresh. pywire creates a persistent, bi-directional conduit between your
-          Python logic and the Browser.
+      <p class="eyebrow">Why pywire</p>
+      <Heading level="h2" class="features-h2">The frontend ergonomics of Svelte. The simplicity of Python.</Heading>
+      <div class="features-grid">
+        <Feature icon="lucide:zap" title="Fine-grained reactivity" highlight="count = wire(0)">
+          Wrap a value in <code>wire()</code> and any template that reads it updates automatically — no hooks, no virtual
+          DOM, no client routing.
         </Feature>
-        <Feature icon="lucide:file-code" title="Single File Components">
-          Keep your Python logic, HTML structure, and scoped styles in one cohesive `.wire` file. No more context
-          switching between languages.
+        <Feature icon="lucide:file-code" title="One file, many languages" highlight="counter.wire">
+          .wire single-file components: Python on top of HTML. First-class JS and CSS in the same file. JS component
+          islands coming soon.
         </Feature>
-        <Feature icon="lucide:ban" title="Zero JS Overhead">
-          Write pure Python and HTML. pywire handles the transport layer, so you can build modern interactive apps
-          without touching a single line of JavaScript.
+        <Feature
+          icon="lucide:zap-off"
+          title="Live by default"
+          highlight={['WebSocket', 'WebTransport', 'HTTP Long Polling']}
+        >
+          DOM diffs stream from the server over your transport of choice. No JSON APIs to invent, no client state to
+          sync.
         </Feature>
       </div>
     </div>
@@ -91,21 +111,216 @@ const pywireHtml = highlighter.codeToHtml(pywireCode, {
 </DefaultLayout>
 
 <style lang="scss">
+  // The Hero — a single unified design under either Lab or Void light.
+  // Engineering graph-paper grid behind the type, soft accent radial wash,
+  // matched-intensity halo recipes for both modes.
   .hero {
-    margin: 6rem 0;
+    position: relative;
+    padding: var(--space-l) 0 var(--space-l);
+    overflow: visible;
+
+    @media (min-width: 768px) {
+      padding: var(--space-2xl) 0 var(--space-3xl);
+    }
   }
 
-  .text-gradient {
-    background: linear-gradient(315deg, var(--color-wire-glow) 25%, var(--color-wire-dim));
-    background-clip: border-box;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+  // Engineering graph paper grid: 32px minor cells, 128px major cells.
+  // Same visual weight on Lab (ink @6%) and Void (text @5%). One unified
+  // background — no radial wash competing with it.
+  .hero-grid-bg {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: -8rem;
+    left: 0;
+    z-index: -1;
+    // Soft fade to bg before the "Why pywire" section so the grid doesn't
+    // collide with prose. Opaque through the headline/CTA band, then a
+    // gradual wash to transparent in the lower third.
+    mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 0%, black 80%, transparent 100%);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px);
+    background-size:
+      32px 32px,
+      32px 32px,
+      128px 128px,
+      128px 128px;
+    pointer-events: none;
   }
 
-  .hero-code-block {
-    /* The "Wire" Glow */
-    box-shadow: 0 0 50px -10px rgba(0, 240, 255, 0.15);
-    border-radius: var(--radius-m);
+  // Removed radial wash — was creating a "two competing backgrounds"
+  // effect. The blueprint grid stands alone.
+  .hero-radial-wash {
+    display: none;
+  }
+
+  .hero-container {
+    position: relative;
+  }
+
+  .hero-headline {
+    margin: 0;
+    color: var(--foreground-color);
+    font-weight: 700;
+    font-size: clamp(1.75rem, 1rem + 4.5vw, 5.5rem);
+    line-height: 1.05;
+    font-family: var(--font-heading);
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .hero-sub {
+    margin: 0;
+    max-width: 28rem;
+    color: var(--text-decoration-color);
+    font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
+    line-height: 1.5;
+    text-wrap: pretty;
+  }
+
+  .accent-text {
+    color: var(--accent-color);
+    // Same accent-tinted text halo, both modes. Glow on Void; quiet
+    // cool atmospheric tint on Lab.
+    text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
+  }
+
+  // macOS-chrome code window — adapts to Lab / Void per components/code-window.
+  // Lab: light surface, light syntax theme. Void: dark surface, dark syntax.
+  // Same recipe: 1px accent ring + soft accent-tint halo at matched intensity.
+  .code-window {
+    position: relative;
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--accent-color) 30%, transparent),
+      0 8px 24px color-mix(in oklch, var(--accent-color) 12%, transparent);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-l);
+    background: light-dark(var(--theme-light-surface-2), #1c1f2e);
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+
+  .code-window-chrome {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--border-color);
+    background: light-dark(var(--theme-light-surface), #252839);
+    padding: 0.65rem 0.9rem;
+
+    .dot {
+      display: inline-block;
+      border-radius: 50%;
+      width: 11px;
+      height: 11px;
+    }
+
+    .dot-red {
+      background: #ff5f57;
+    }
+
+    .dot-yellow {
+      background: #febc2e;
+    }
+
+    .dot-green {
+      background: #28c840;
+    }
+
+    .filename {
+      margin-left: 0.5rem;
+      color: var(--text-decoration-color);
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+  }
+
+  .code-window-body {
+    padding: 0.9rem 1.1rem;
+    font-size: 0.85rem;
+    line-height: 1.6;
+
+    :global(pre) {
+      margin: 0;
+      background: transparent !important;
+      overflow-x: auto;
+    }
+  }
+
+  // Theme-paired bodies: only one renders depending on user's color scheme.
+  // Defeats Astro's view-transitions hydration timing on theme swap.
+  .code-window-body--dark {
+    display: none;
+  }
+
+  :root.darkmode .code-window-body--dark {
+    display: block;
+  }
+
+  :root.darkmode .code-window-body--light {
+    display: none;
+  }
+
+  .features-section {
+    padding: var(--space-3xl) 0;
+  }
+
+  :global(.features-h2) {
+    margin: 0.5rem 0 var(--space-l);
+    max-width: 38ch;
+    font-weight: 600;
+    font-size: clamp(1.5rem, 0.75rem + 3vw, 2.5rem) !important;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-m);
+    margin-top: var(--space-l);
+
+    @media (min-width: 800px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .eyebrow {
+    margin: 0 0 0.6rem;
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  // Hero CTA buttons — defeat accessible-astro's default 3px borders & big
+  // padding so the pair matches the design (compact, 1.5px, the new tokens).
+  :global(.cta-primary),
+  :global(.cta-secondary) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    border-width: 1.5px !important;
+    border-radius: 8px !important;
+    padding: 0.65rem 1.1rem !important;
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    line-height: 1 !important;
+  }
+
+  :global(.cta-primary) {
+    box-shadow: var(--glow-cyan-soft);
+  }
+
+  :global(.cta-primary:hover) {
+    box-shadow: var(--glow-cyan);
   }
 
   .avatar {
