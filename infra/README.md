@@ -75,6 +75,10 @@ Wrinkles found the hard way:
 
 ## Known wrinkles
 
+- **Plan output posted publicly is redacted at the source.** `infra-plan.yml`
+  scrubs email addresses from `plan.txt` right after generation (PR comments,
+  drift logs, and drift issues all read that file). The repo is public — never
+  remove that `sed`.
 - **Pages projects still carry a live GitHub connection.** Both projects are
   deployed by GitHub Actions (direct upload), so the connection is vestigial
   (builds disabled since `53218bf`), but the Cloudflare API **cannot detach it**

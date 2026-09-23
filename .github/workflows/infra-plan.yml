@@ -51,7 +51,10 @@ jobs:
             exit 0
           fi
           terraform plan -input=false -no-color -detailed-exitcode -lock-timeout=120s >plan.txt 2>&1
-          echo "exitcode=$?" >>"$GITHUB_OUTPUT"
+          code=$?
+          # The plan is posted publicly (PR comments, drift issues) — scrub emails.
+          sed -i -E 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/[email]/g' plan.txt
+          echo "exitcode=$code" >>"$GITHUB_OUTPUT"
           exit 0
 
       - name: Comment plan on PR
