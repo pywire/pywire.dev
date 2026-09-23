@@ -36,9 +36,37 @@ terraform plan   # reads TF_VARs from terraform.tfvars
 
 | Secret | Purpose |
 |---|---|
-| `CLOUDFLARE_API_TOKEN` | provider auth (Pages, Workers, DNS, Routes, Rulesets, Email Routing, R2 Storage — all Edit) |
+| `CLOUDFLARE_API_TOKEN` | provider auth — see [Token permissions](#token-permissions) for the exact grant list |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` | state backend (Object Read & Write, scoped to `pywire-tfstate` only) |
 | `EMAIL_FORWARDING_RULES` / `MAINTAINER_EMAILS` | private tfvars values for CI |
+
+## Token permissions
+
+The `CLOUDFLARE_API_TOKEN` must be an **account token** (verify: passes
+`/accounts/{id}/tokens/verify`, fails `/user/tokens/verify`). Current picker
+names (2026-09) — dashboard says *Write*, older docs say *Edit*:
+
+| Scope | Permission |
+|---|---|
+| Account | Pages: Write |
+| Account | Workers R2 Storage: Write |
+| Account | Workers Scripts: Write |
+| Account | Email Routing Addresses: Write |
+| Account | Account Rulesets: Write |
+| Zone (pywire.dev) | Email Routing Rules: Write |
+| Zone (pywire.dev) | Workers Routes: Write |
+| Zone (pywire.dev) | DNS: Write |
+| Zone (pywire.dev) | Zone WAF: Write |
+| Zone (pywire.dev) | Zone Settings: **Read AND Write** |
+
+Wrinkles found the hard way:
+
+- No "Zone Rulesets" permission exists in the current picker — zone rulesets
+  (`cloudflare_ruleset`) are gated by Zone WAF + Account Rulesets.
+- `email_routing_settings` is gated by **Zone Settings**, not the Email
+  Routing permissions, and its read check needs Zone Settings **Read set
+  explicitly** — Write alone does not imply Read for that endpoint (403,
+  code 10000).
 
 ## Break glass
 
