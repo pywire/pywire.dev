@@ -1,6 +1,7 @@
 name: Deploy Landing Site
 
 on:
+  workflow_dispatch: {}
   push:
     paths:
       - 'site/**'
