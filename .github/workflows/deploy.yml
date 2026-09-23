@@ -14,17 +14,17 @@ jobs:
       deployments: write
     name: Deploy Landing Site
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
-          node-version: '20'
+          node-version: '24'
       
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v6
         with:
-          version: 9
+          version: 10
 
       - name: Install dependencies
         working-directory: site
@@ -35,11 +35,9 @@ jobs:
         run: pnpm run build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: pywire-landing
-          directory: site/dist
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name == 'main' && 'main' || 'nightly' }}
+          command: pages deploy site/dist --project-name=pywire-landing --branch=${{ github.ref_name == 'main' && 'main' || 'nightly' }}
