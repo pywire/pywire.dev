@@ -44,6 +44,20 @@ terraform plan   # reads TF_VARs from terraform.tfvars
 
 - Stuck lock: `terraform force-unlock <LOCK_ID>` (lock object is
   `pywire.dev.tfstate-lock.info` in the bucket).
-- The first apply after the 2026-09 remote-state migration also converges the
-  pre-existing `pywire-docs` Pages project drift (GitHub repo renamed
-  `pywire-core` → `pywire`; deploys are wrangler-driven, so the connection is inert).
+
+## Known wrinkles
+
+- **Pages projects still carry a live GitHub connection.** Both projects are
+  deployed by GitHub Actions (direct upload), so the connection is vestigial
+  (builds disabled since `53218bf`), but the Cloudflare API **cannot detach it**
+  — `PATCH source: null` succeeds and is silently ignored. Converging to the
+  direct-upload config requires deleting + recreating both projects (deployments
+  wiped; both sites 404 until the next deploy). Coordinate: merge the deploy
+  workflow fixes first, then recreate, then dispatch both deploys.
+- **`build_config` phantom diffs** (`build_caching`, `web_analytics_*` "known
+  after apply") appear on every plan with provider 5.16. Declare-and-keep is the
+  workaround; they should resolve when the projects are recreated.
+- **Provider upgrades past 5.16 are blocked**: 5.24+ cannot read this state's
+  `email_routing_settings` (new `support_subaddress` field vs old state objects).
+  To upgrade: `terraform state rm` the four email-routing resources, re-import
+  them with the new provider, then bump the lock.
