@@ -62,6 +62,20 @@ resource "cloudflare_pages_project" "landing" {
   }
 }
 
+# Custom domains: DNS for these lives registrar-side (Namecheap). Terraform
+# manages only the Pages-side attachment — recreating a project drops it.
+resource "cloudflare_pages_domain" "docs" {
+  account_id   = var.account_id
+  project_name = cloudflare_pages_project.docs.name
+  name         = "docs.pywire.dev"
+}
+
+resource "cloudflare_pages_domain" "landing" {
+  account_id   = var.account_id
+  project_name = cloudflare_pages_project.landing.name
+  name         = "pywire.dev"
+}
+
 # --- 3. CDN Bucket (R2) ---
 resource "cloudflare_r2_bucket" "cdn" {
   account_id = var.account_id
