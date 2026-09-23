@@ -1,9 +1,26 @@
 terraform {
+  required_version = ">= 1.10" # backend use_lockfile needs native S3 locking
+
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 5.0"
     }
+  }
+
+  # Remote state on R2. The pywire-tfstate bucket was created manually (once,
+  # chicken-and-egg) — see infra/README.md. Access keys come from the
+  # environment (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY).
+  backend "s3" {
+    bucket                      = "pywire-tfstate"
+    key                         = "pywire.dev.tfstate"
+    region                      = "auto"
+    endpoints                   = { s3 = "https://abd8226d8d910afcfa1d370097e6336a.r2.cloudflarestorage.com" }
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_metadata_api_check     = true
+    use_lockfile                = true
   }
 }
 

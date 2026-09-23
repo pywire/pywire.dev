@@ -1,0 +1,106 @@
+name: Infra plan
+
+on:
+  pull_request:
+    paths: ["infra/**", "worker/**"]
+  push:
+    branches: [main]
+    paths: ["infra/**", "worker/**"]
+  schedule:
+    - cron: "0 8 * * 1" # weekly drift check
+
+permissions:
+  contents: read
+  pull-requests: write # plan comments
+  issues: write # drift issues
+
+concurrency:
+  group: terraform
+  cancel-in-progress: false # serialize plans/applies against the state lock
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_forwarding_rules: ${{ secrets.EMAIL_FORWARDING_RULES }}
+      TF_VAR_maintainer_emails: ${{ secrets.MAINTAINER_EMAILS }}
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.16.4
+          terraform_wrapper: false
+
+      - name: Init + plan
+        id: plan
+        run: |
+          set +e
+          terraform init -input=false >plan.txt 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            echo "exitcode=$code" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          terraform plan -input=false -no-color -detailed-exitcode -lock-timeout=120s >plan.txt 2>&1
+          echo "exitcode=$?" >>"$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Comment plan on PR
+        # A non-empty plan on a PR is expected — comment it, never fail the PR.
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const code = Number('${{ steps.plan.outputs.exitcode }}');
+            const plan = require('fs').readFileSync('infra/plan.txt', 'utf8').trim();
+            const badge = code === 0 ? '✅ no changes' : code === 2 ? '📝 changes' : '❌ error';
+            const fenced = plan.length > 55000
+              ? plan.slice(0, 27000) + '\n… (truncated) …\n' + plan.slice(-27000)
+              : plan;
+            const body = `## Terraform plan — ${badge}\n\n\`\`\`hcl\n${fenced}\n\`\`\``;
+            const { data: comments } = await github.rest.issues.listComments({
+              ...context.repo,
+              issue_number: context.issue.number,
+            });
+            const prior = comments.find(
+              (c) => c.user.login === 'github-actions[bot]' && c.body.startsWith('## Terraform plan')
+            );
+            if (prior) {
+              await github.rest.issues.updateComment({ ...context.repo, comment_id: prior.id, body });
+            } else {
+              await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
+            }
+
+      - name: Enforce converged state (push to main)
+        # On main, a non-empty plan means applied infra no longer matches the repo.
+        if: github.event_name == 'push' && steps.plan.outputs.exitcode != '0'
+        run: |
+          cat plan.txt
+          echo "::error title=Infrastructure drift::main does not match applied state — run the 'Infra apply' workflow to converge."
+          exit 1
+
+      - name: Open drift issue (scheduled check)
+        if: github.event_name == 'schedule' && steps.plan.outputs.exitcode != '0'
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const title = 'Terraform drift on main';
+            const q = `repo:${context.repo.owner}/${context.repo.repo} is:issue is:open in:title "${title}"`;
+            const { data } = await github.rest.search.issuesAndPullRequests({ q });
+            if (data.total_count === 0) {
+              const plan = require('fs').readFileSync('infra/plan.txt', 'utf8');
+              await github.rest.issues.create({
+                ...context.repo,
+                title,
+                body: `Scheduled \`terraform plan\` on main reports drift or error:\n\n\`\`\`hcl\n${plan.slice(-3000)}\n\`\`\`\n\nRun the **Infra apply** workflow (or fix the config and merge).`,
+              });
+            }

@@ -1,0 +1,46 @@
+name: Infra apply
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: terraform
+  cancel-in-progress: false # never cancel mid-apply
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: infra
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_forwarding_rules: ${{ secrets.EMAIL_FORWARDING_RULES }}
+      TF_VAR_maintainer_emails: ${{ secrets.MAINTAINER_EMAILS }}
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Main branch only
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Infra apply only runs on main"
+          exit 1
+
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.16.4
+          terraform_wrapper: false
+
+      - run: terraform init -input=false
+
+      - run: terraform apply -input=false -auto-approve -no-color -lock-timeout=300s
+
+      - name: Verify converged (plan must be empty)
+        run: terraform plan -input=false -no-color -detailed-exitcode -lock-timeout=120s
