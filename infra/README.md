@@ -79,16 +79,13 @@ Wrinkles found the hard way:
   scrubs email addresses from `plan.txt` right after generation (PR comments,
   drift logs, and drift issues all read that file). The repo is public — never
   remove that `sed`.
-- **Pages projects still carry a live GitHub connection.** Both projects are
-  deployed by GitHub Actions (direct upload), so the connection is vestigial
-  (builds disabled since `53218bf`), but the Cloudflare API **cannot detach it**
-  — `PATCH source: null` succeeds and is silently ignored. Converging to the
-  direct-upload config requires deleting + recreating both projects (deployments
-  wiped; both sites 404 until the next deploy). Coordinate: merge the deploy
-  workflow fixes first, then recreate, then dispatch both deploys.
-- **`build_config` phantom diffs** (`build_caching`, `web_analytics_*` "known
-  after apply") appear on every plan with provider 5.16. Declare-and-keep is the
-  workaround; they should resolve when the projects are recreated.
+- **Project recreation drops custom domains AND their DNS record** (Pages
+  auto-deletes the zone CNAME when the project is destroyed, 2026-09 live
+  lesson). Both `cloudflare_pages_domain` resources and the docs CNAME are
+  now terraform-managed; after any `terraform apply -replace` of a Pages
+  project, re-check the domain attach and CNAME, then dispatch the site
+  deploy. Also: Pages refuses to delete a project with too many deployments —
+  prune them via the API first (`accounts/.../pages/projects/<p>/deployments`).
 - **Provider upgrades past 5.16 are blocked**: 5.24+ cannot read this state's
   `email_routing_settings` (new `support_subaddress` field vs old state objects).
   To upgrade: `terraform state rm` the four email-routing resources, re-import

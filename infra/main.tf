@@ -62,8 +62,18 @@ resource "cloudflare_pages_project" "landing" {
   }
 }
 
-# Custom domains: DNS for these lives registrar-side (Namecheap). Terraform
-# manages only the Pages-side attachment — recreating a project drops it.
+# Custom domains: Pages auto-managed this CNAME while the domain was attached
+# to the old project; destroying the project deleted it. Declared here so a
+# future project recreate can't silently drop DNS for the docs site.
+resource "cloudflare_dns_record" "docs_cname" {
+  zone_id = var.zone_id
+  name    = "docs"
+  content = "pywire-docs.pages.dev"
+  type    = "CNAME"
+  proxied = true
+  ttl     = 1
+}
+
 resource "cloudflare_pages_domain" "docs" {
   account_id   = var.account_id
   project_name = cloudflare_pages_project.docs.name
