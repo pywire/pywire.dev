@@ -1,9 +1,27 @@
 terraform {
+  required_version = ">= 1.10" # backend use_lockfile needs native S3 locking
+
   required_providers {
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "~> 5.0"
+      version = "~> 5.0" # pinned by .terraform.lock.hcl at 5.16.0 — 5.24+ cannot
+      # read this state's email_routing_settings (support_subaddress)
     }
+  }
+
+  # Remote state on R2. The pywire-tfstate bucket was created manually (once,
+  # chicken-and-egg) — see infra/README.md. Access keys come from the
+  # environment (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY).
+  backend "s3" {
+    bucket                      = "pywire-tfstate"
+    key                         = "pywire.dev.tfstate"
+    region                      = "auto"
+    endpoints                   = { s3 = "https://abd8226d8d910afcfa1d370097e6336a.r2.cloudflarestorage.com" }
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+    skip_metadata_api_check     = true
+    use_lockfile                = true
   }
 }
 
@@ -11,24 +29,20 @@ provider "cloudflare" {
   api_token = var.cloudflare_api_token
 }
 
-# --- 1. The Documentation Site (Project A) ---
-# Connects to the 'pywire/pywire' repo
+# --- 1. The Sites (Pages projects) ---
+# Both are direct-upload projects: GitHub Actions builds and deploys them
+# (pywire/pywire deploy-docs.yml for docs, this repo's deploy.yml for the
+# landing site). No Cloudflare-side GitHub integration — that was legacy
+# from before the workflows existed, kept disabled until now.
 resource "cloudflare_pages_project" "docs" {
   account_id        = var.account_id
   name              = "pywire-docs"
   production_branch = "main"
 
-  source = {
-    type = "github"
-    config = {
-      owner                          = "pywire"
-      repo_name                      = "pywire"
-      production_branch              = "main"
-      production_deployments_enabled = false
-      preview_deployment_setting     = "none"
-    }
-  }
-
+  # Inert for direct-upload deploys; declared because provider 5.16 errors
+  # on plans without it. Its computed sub-attrs (build_caching,
+  # web_analytics_*) phantom-diff every plan until the project is recreated
+  # (see infra/README.md).
   build_config = {
     root_dir        = "docs"
     build_command   = "pnpm run build"
@@ -40,17 +54,6 @@ resource "cloudflare_pages_project" "landing" {
   account_id        = var.account_id
   name              = "pywire-landing"
   production_branch = "main"
-
-  source = {
-    type = "github"
-    config = {
-      owner                          = "pywire"
-      repo_name                      = "pywire.dev"
-      production_branch              = "main"
-      production_deployments_enabled = false
-      preview_deployment_setting     = "none"
-    }
-  }
 
   build_config = {
     root_dir        = "site"

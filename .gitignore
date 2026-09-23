@@ -1,13 +1,14 @@
 # Local secret files
 *.tfvars
 *.tfvars.json
+!infra/infra.auto.tfvars
+infra/backend.secrets
 
 # Terraform state files (contain secrets in plain text!)
 terraform.tfstate
 terraform.tfstate.backup
 terraform.tfstate.*.backup
 .terraform/
-.terraform.lock.hcl
 
 node_modules/
 dist/
