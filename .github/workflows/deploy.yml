@@ -35,11 +35,8 @@ jobs:
         run: pnpm run build
 
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/pages-action@v1
+        uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: pywire-landing
-          directory: site/dist
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref_name == 'main' && 'main' || 'nightly' }}
+          command: pages deploy site/dist --project-name=pywire-landing --branch=${{ github.ref_name == 'main' && 'main' || 'nightly' }}
