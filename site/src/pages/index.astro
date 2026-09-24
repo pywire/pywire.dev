@@ -40,7 +40,7 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   <section class="hero">
     <div class="hero-grid-bg" aria-hidden="true"></div>
     <div class="hero-radial-wash" aria-hidden="true"></div>
-    <div class="container hero-container">
+    <div class="hero-container container">
       <div class="grid grid-cols-1 items-center gap-24 lg:grid-cols-2">
         <div class="flex flex-col items-center gap-8 md:items-start">
           <h1 class="hero-headline">
@@ -48,13 +48,7 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
           </h1>
           <p class="hero-sub">HTML-over-the-wire without the JavaScript hangover.</p>
           <div class="flex flex-col gap-3 min-[500px]:flex-row">
-            <Link
-              href="/docs/guides/quickstart/"
-              isButton
-              type="secondary"
-              variant="outlined"
-              class="cta-secondary"
-            >
+            <Link href="/docs/guides/quickstart/" isButton type="secondary" variant="outlined" class="cta-secondary">
               Get started
               <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
             </Link>
@@ -166,12 +160,12 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 
   .hero-headline {
     margin: 0;
-    font-family: var(--font-heading);
+    color: var(--foreground-color);
     font-weight: 700;
     font-size: clamp(2.75rem, 1.5rem + 6vw, 5.5rem);
     line-height: 1.02;
+    font-family: var(--font-heading);
     letter-spacing: -0.035em;
-    color: var(--foreground-color);
     text-wrap: balance;
   }
 
@@ -279,10 +273,10 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   }
 
   .features-grid {
-    margin-top: var(--space-l);
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-m);
+    margin-top: var(--space-l);
 
     @media (min-width: 800px) {
       grid-template-columns: repeat(3, 1fr);
@@ -328,4 +322,3 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     padding: var(--space-s);
   }
 </style>
-
