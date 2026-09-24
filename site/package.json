@@ -3,7 +3,7 @@
   "description": "The official pywire.dev website",
   "version": "0.1.0",
   "author": "Reece Holmdahl",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "homepage": "https://accessible-astro-starter.incluud.dev/",
   "scripts": {
