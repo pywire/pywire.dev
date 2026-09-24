@@ -36,19 +36,25 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 })
 ---
 
-<DefaultLayout>
+<DefaultLayout title="Home">
   <section class="hero">
     <div class="hero-grid-bg" aria-hidden="true"></div>
     <div class="hero-radial-wash" aria-hidden="true"></div>
-    <div class="hero-container container">
-      <div class="grid grid-cols-1 items-center gap-8 md:gap-12 lg:grid-cols-2 lg:gap-24">
-        <div class="flex flex-col items-start gap-5 md:gap-8">
+    <div class="container hero-container">
+      <div class="grid grid-cols-1 items-center gap-24 lg:grid-cols-2">
+        <div class="flex flex-col items-center gap-8 md:items-start">
           <h1 class="hero-headline">
-            The <span class="accent-text">Live Conduit</span> for Python
+            The <span class="accent-text">Live<br />Conduit</span><br />for Python
           </h1>
           <p class="hero-sub">HTML-over-the-wire without the JavaScript hangover.</p>
-          <div class="flex flex-row flex-wrap gap-3">
-            <Link href="/docs/guides/quickstart/" isButton type="secondary" variant="outlined" class="cta-secondary">
+          <div class="flex flex-col gap-3 min-[500px]:flex-row">
+            <Link
+              href="/docs/guides/quickstart/"
+              isButton
+              type="secondary"
+              variant="outlined"
+              class="cta-secondary"
+            >
               Get started
               <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
             </Link>
@@ -116,12 +122,8 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   // matched-intensity halo recipes for both modes.
   .hero {
     position: relative;
-    padding: var(--space-l) 0 var(--space-l);
+    padding: var(--space-2xl) 0 var(--space-3xl);
     overflow: visible;
-
-    @media (min-width: 768px) {
-      padding: var(--space-2xl) 0 var(--space-3xl);
-    }
   }
 
   // Engineering graph paper grid: 32px minor cells, 128px major cells.
@@ -164,12 +166,12 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 
   .hero-headline {
     margin: 0;
-    color: var(--foreground-color);
-    font-weight: 700;
-    font-size: clamp(1.75rem, 1rem + 4.5vw, 5.5rem);
-    line-height: 1.05;
     font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: clamp(2.75rem, 1.5rem + 6vw, 5.5rem);
+    line-height: 1.02;
     letter-spacing: -0.035em;
+    color: var(--foreground-color);
     text-wrap: balance;
   }
 
@@ -273,17 +275,14 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     margin: 0.5rem 0 var(--space-l);
     max-width: 38ch;
     font-weight: 600;
-    font-size: clamp(1.5rem, 0.75rem + 3vw, 2.5rem) !important;
-    line-height: 1.15;
     letter-spacing: -0.025em;
-    text-wrap: balance;
   }
 
   .features-grid {
+    margin-top: var(--space-l);
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-m);
-    margin-top: var(--space-l);
 
     @media (min-width: 800px) {
       grid-template-columns: repeat(3, 1fr);
@@ -329,3 +328,4 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
     padding: var(--space-s);
   }
 </style>
+
