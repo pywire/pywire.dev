@@ -1,0 +1,456 @@
+---
+import { Link } from 'accessible-astro-components'
+import { Icon } from 'astro-icon/components'
+
+/**
+ * HeroStory — "the camera story" from the design system's hero explorations.
+ *
+ * A pinned scroll story over a WebGL grid: the hero, then three steps (server,
+ * wire, browser) while the camera zooms into the server node, follows the wire
+ * and pulls back to the page. Once the page is up, a live counter runs the
+ * pywire loop and its button sends a real round trip down the wire.
+ * The section after it should overlap the last screen (see `.story-after`).
+ */
+---
+
+<section class="story" data-story aria-labelledby="hero-title">
+  <div class="stage">
+    <canvas aria-hidden="true"></canvas>
+    <div class="world" data-world>
+      <div class="ov" data-ov="server" aria-hidden="true">
+        <div class="ov-server">
+          <span class="ov-label">server</span>
+          <code class="chip">count = wire(<b data-count="server">0</b>)</code>
+        </div>
+      </div>
+      <div class="ov" data-ov="browser" aria-hidden="true">
+        <span class="ov-label ov-browser">browser</span>
+      </div>
+      <div class="ov" data-ov="diff" aria-hidden="true">
+        <code class="packet">Count: <b data-count="diff">0</b></code>
+      </div>
+      <div class="ov" data-ov="event" aria-hidden="true">
+        <code class="packet packet-event">@click</code>
+      </div>
+      <div class="ov-card" data-ov="card" role="group" aria-label="Live counter demo" inert>
+        <p class="card-count">Count: <span data-count="browser">0</span></p>
+        <button type="button" class="card-btn" data-add disabled>Add one</button>
+      </div>
+    </div>
+
+    <div class="copy step on" data-step>
+      <h1 id="hero-title" class="hero-headline">
+        The <span class="accent-text">Live Conduit</span> for Python
+      </h1>
+      <p class="lead">HTML-over-the-wire without the JavaScript hangover.</p>
+      <div class="ctas">
+        <Link href="/docs/guides/quickstart/" isButton type="primary" class="cta cta-primary">
+          Get started
+          <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
+        </Link>
+        <Link
+          href="https://github.com/pywire/pywire"
+          isButton
+          type="secondary"
+          variant="outlined"
+          isExternal
+          hideIcon
+          class="cta cta-secondary"
+        >
+          <Icon aria-hidden="true" name="lucide:github" size="1.1rem" />
+          View on GitHub
+        </Link>
+      </div>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">01 · Server</p>
+      <h2>State lives on the server</h2>
+      <p class="lead">Variables wrapped in <code>wire()</code> become reactive data sources that drive UI updates.</p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">02 · Wire</p>
+      <h2>Diffs over the wire</h2>
+      <p class="lead">When state changes, the server pushes a DOM diff over a WebSocket.</p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">03 · Browser</p>
+      <h2>The page patches in place</h2>
+      <p class="lead">
+        Each diff lands on the element it changed. Click <strong>Add one</strong> to send an event up the wire.
+      </p>
+    </div>
+    <div class="progress" aria-hidden="true"><i data-progress></i></div>
+  </div>
+</section>
+
+<script>
+  import { mountStory } from '../scripts/hero-story/story'
+
+  let unmount: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    unmount?.()
+    const root = document.querySelector<HTMLElement>('[data-story]')
+    unmount = root ? mountStory(root) : undefined
+  })
+  document.addEventListener('astro:before-swap', () => {
+    unmount?.()
+    unmount = undefined
+  })
+</script>
+
+<style lang="scss">
+  .story {
+    --gut: clamp(1.125rem, 4vw, 3.5rem);
+
+    // accessible-astro's colors.css overrides the site's --color-primary-* tokens,
+    // so the story's buttons take the wire ladder directly.
+    --btn-bg: var(--accent-color);
+    --btn-bg-hover: var(--link-hover-color);
+    --btn-fg: light-dark(#fff, oklch(15% 0.04 195));
+
+    position: relative;
+    // Scroll length of the story; the last 100svh is the pull-back that the
+    // next section overlaps.
+    height: 550svh;
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: pan-y;
+  }
+
+  :global(.no-gl) {
+    canvas,
+    .world {
+      display: none;
+    }
+
+    .stage {
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+  }
+
+  // --- Overlays that ride the camera -------------------------------------
+  .world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+  }
+
+  .ov {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    will-change: transform, opacity;
+  }
+
+  .ov-label {
+    color: var(--text-decoration-color);
+    font-weight: 500;
+    font-size: 8px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .ov-server {
+    display: grid;
+    position: absolute;
+    top: 0;
+    left: 26px;
+    gap: 4px;
+    translate: 0 -50%;
+  }
+
+  .chip {
+    box-shadow: 0 0 calc(var(--hit, 0) * 14px) color-mix(in oklch, var(--accent-color) 45%, transparent);
+    border: 1px solid color-mix(in oklch, var(--accent-color) calc(35% + var(--hit, 0) * 50%), var(--border-color));
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--background-color) 85%, transparent);
+    padding: 3px 7px;
+    color: var(--foreground-color);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+
+    b {
+      color: var(--accent-color);
+      font-weight: 600;
+    }
+  }
+
+  [data-ov='server'] {
+    --hit: 0;
+  }
+
+  // Portrait: the node sits centred at the top, so the chip goes above it.
+  :global([data-orient='portrait']) .ov-server {
+    left: 0;
+    justify-items: center;
+    translate: -50% calc(-100% - 22px);
+  }
+
+  .ov-browser {
+    position: absolute;
+    bottom: 6px;
+    left: 0;
+  }
+
+  .packet {
+    position: absolute;
+    bottom: 10px;
+    left: 0;
+    translate: -50% 0;
+    border: 1px solid color-mix(in oklch, var(--accent-color) 60%, transparent);
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--background-color) 88%, transparent);
+    padding: 2px 6px;
+    color: var(--accent-color);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+
+    b {
+      font-weight: 600;
+    }
+  }
+
+  .packet-event {
+    color: var(--foreground-color);
+  }
+
+  .ov-card {
+    --patch: 0;
+
+    display: grid;
+    position: absolute;
+    place-content: center;
+    justify-items: center;
+    gap: 12px;
+    opacity: 0;
+    box-shadow: 0 0 calc(var(--patch) * 28px) color-mix(in oklch, var(--accent-color) 40%, transparent);
+    border: 1px solid color-mix(in oklch, var(--accent-color) calc(40% + var(--patch) * 60%), transparent);
+    border-radius: 4px;
+    background: color-mix(in oklch, var(--background-color) 70%, transparent);
+    pointer-events: auto;
+    text-align: center;
+  }
+
+  .card-count {
+    margin: 0;
+    color: var(--foreground-color);
+    font-weight: 600;
+    font-size: 1.5rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+
+    span {
+      color: var(--accent-color);
+    }
+  }
+
+  .card-btn {
+    transition: background-color var(--animation-speed-fast);
+    cursor: pointer;
+    border: 0;
+    border-radius: 8px;
+    background: var(--btn-bg);
+    padding: 0.5rem 0.9rem;
+    color: var(--btn-fg);
+    font: 600 0.9rem var(--font-body);
+
+    &:hover {
+      background: var(--btn-bg-hover);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 3px;
+    }
+  }
+
+  // --- Copy -------------------------------------------------------------
+  .copy {
+    display: grid;
+    position: absolute;
+    top: clamp(96px, 17svh, 190px);
+    right: var(--gut);
+    left: var(--gut);
+    gap: 20px;
+    isolation: isolate;
+    max-width: 40rem;
+
+    // Soft scrim so the copy reads over whatever the grid is doing.
+    &::before {
+      position: absolute;
+      z-index: -1;
+      inset: -30% -25%;
+      background: radial-gradient(
+        closest-side,
+        color-mix(in oklch, var(--background-color) 82%, transparent),
+        transparent
+      );
+      pointer-events: none;
+      content: '';
+    }
+
+    &.low {
+      top: auto;
+      bottom: clamp(64px, 12svh, 140px);
+    }
+
+    h2 {
+      margin: 0;
+      font-weight: 600;
+      font-size: clamp(2rem, 1.3rem + 2.8vw, 3.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+
+    code {
+      color: var(--accent-color);
+      font-size: 0.9em;
+      font-family: var(--font-mono);
+    }
+  }
+
+  .hero-headline {
+    margin: 0;
+    max-width: 12ch;
+    color: var(--foreground-color);
+    font-weight: 700;
+    font-size: clamp(2.75rem, 1.5rem + 5vw, 5.5rem);
+    line-height: 1.02;
+    font-family: var(--font-heading);
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .accent-text {
+    color: var(--accent-color);
+    text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
+  }
+
+  .lead {
+    margin: 0;
+    max-width: 30rem;
+    color: var(--text-decoration-color);
+    font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
+    line-height: 1.45;
+    text-wrap: pretty;
+
+    strong {
+      color: var(--foreground-color);
+      font-weight: 600;
+    }
+  }
+
+  .eyebrow {
+    margin: 0;
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  // Compact CTA pair: defeat accessible-astro's default 3px borders and padding.
+  :global(.cta) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    border-width: 1.5px !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1.2rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+  }
+
+  :global(.cta-primary) {
+    box-shadow: var(--glow-cyan-soft);
+    border-color: var(--btn-bg) !important;
+    background: var(--btn-bg) !important;
+    color: var(--btn-fg) !important;
+  }
+
+  :global(.cta-primary:hover) {
+    box-shadow: var(--glow-cyan);
+    border-color: var(--btn-bg-hover) !important;
+    background: var(--btn-bg-hover) !important;
+  }
+
+  :global(.cta-secondary) {
+    background: color-mix(in oklch, var(--background-color) 60%, transparent) !important;
+  }
+
+  .step {
+    transform: translateY(16px);
+    opacity: 0;
+    transition:
+      opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+
+    &:global(.on) {
+      transform: none;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  .progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--border-color);
+    height: 2px;
+
+    i {
+      position: absolute;
+      transform: scaleX(0);
+      transform-origin: left;
+      inset: 0;
+      background: var(--accent-color);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .step {
+      transform: none;
+      transition: none;
+    }
+  }
+</style>
