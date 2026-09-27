@@ -57,7 +57,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
         <div class="win-bar">
           <span class="srv-led"></span>
           <span class="win-title">counter.wire</span>
-          <span class="win-tag">server</span>
+          <span class="win-tag" data-srv-tag>server</span>
         </div>
         <div class="srv-code" set:html={counterHtml} />
       </div>
@@ -67,6 +67,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebSocket</span></span>
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebTransport</span></span>
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">HTTP long polling</span></span>
+      <span class="ov" data-ov="edge" aria-hidden="true"><span class="lbl lbl-edge">edge node</span></span>
       <span class="ov" data-ov="chip" aria-hidden="true"><code class="wchip" data-chip-text>@click</code></span>
       <div class="brw" data-ov="browser" role="group" aria-label="Live counter demo" inert>
         <div class="win-bar" aria-hidden="true">
@@ -139,6 +140,14 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
       <h2>Any wire you've got</h2>
       <p class="lead">WebSocket, WebTransport or HTTP long polling. Same app, same code.</p>
     </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">05 · Edge <span class="soon">Coming soon</span></p>
+      <h2>Stateless, at the edge</h2>
+      <p class="lead">
+        No server process held open per visitor. State rides along with each event, signed, so the nearest edge node
+        answers and every round trip stays short.
+      </p>
+    </div>
     <button type="button" class="next" data-next>
       <span class="next-k">Next</span>
       <span class="next-label" data-next-label>Write Python, not a frontend</span>
@@ -178,7 +187,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     position: relative;
     // Scroll length of the story; the last 100svh is the pull-back that the
     // next section overlaps.
-    height: 550svh;
+    height: 640svh;
   }
 
   .stage {
@@ -464,6 +473,16 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     text-decoration-color: color-mix(in oklch, var(--text-decoration-color) 70%, transparent);
   }
 
+  .lbl-edge {
+    translate: -50% 0;
+    border-color: color-mix(in oklch, var(--accent-color) 55%, var(--border-color));
+    color: var(--accent-color);
+  }
+
+  :global([data-orient='portrait']) .lbl-edge {
+    translate: calc(-100% - 8px) -50%;
+  }
+
   .lbl-tx {
     translate: 0 calc(-100% - 4px);
     transition:
@@ -510,6 +529,14 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
 
     &:hover {
       background: var(--btn-bg-hover);
+    }
+
+    // Before step 3 the counter isn't wired up yet; make that obvious.
+    &:disabled {
+      opacity: 0.4;
+      filter: grayscale(1);
+      cursor: not-allowed;
+      background: var(--btn-bg);
     }
 
     &:active,
@@ -623,6 +650,16 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     font-family: var(--font-mono);
     letter-spacing: 0.12em;
     text-transform: uppercase;
+  }
+
+  // Edge mode hasn't shipped yet.
+  .soon {
+    margin-left: 0.5em;
+    border: 1px solid color-mix(in oklch, var(--accent-color) 45%, transparent);
+    border-radius: 999px;
+    padding: 1px 7px;
+    font-size: 0.66rem;
+    letter-spacing: 0.08em;
   }
 
   .ctas {
