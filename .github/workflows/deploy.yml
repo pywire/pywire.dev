@@ -1,27 +1,51 @@
 name: Deploy Landing Site
 
+# main deploys production. Nightly (nightly.pywire.dev) only takes PRs that are
+# ready for review: drafts and bare branch pushes never deploy. Mark a PR
+# ready, or push to one that already is, to put it on nightly.
 on:
   workflow_dispatch: {}
   push:
+    branches: [main]
     paths:
       - 'site/**'
-      - 'worker/**'
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    paths:
+      - 'site/**'
 
 jobs:
   deploy-landing:
+    # PRs: ready for review only, and only from this repo (forks get no secrets).
+    if: >-
+      github.event_name != 'pull_request'
+      || (!github.event.pull_request.draft
+          && github.event.pull_request.head.repo.full_name == github.repository)
+    # Strictly one deploy per target at a time: a running deploy is never
+    # cancelled, and a newer one waits for it (GitHub keeps only the newest
+    # waiting job, so an older queued deploy is dropped in its favour). Job
+    # level, so skipped draft runs never join the queue.
+    concurrency:
+      group: deploy-landing-${{ github.ref == 'refs/heads/main' && 'main' || 'nightly' }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     permissions:
       contents: read
       deployments: write
     name: Deploy Landing Site
+    env:
+      TARGET_BRANCH: ${{ github.ref == 'refs/heads/main' && 'main' || 'nightly' }}
     steps:
       - uses: actions/checkout@v7
-      
+        with:
+          # Deploy the PR's own head, not GitHub's merge preview.
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
           node-version: '24'
-      
+
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
@@ -41,4 +65,4 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
-          command: pages deploy site/dist --project-name=pywire-landing --branch=${{ github.ref_name == 'main' && 'main' || 'nightly' }}
+          command: pages deploy site/dist --project-name=pywire-landing --branch=${{ env.TARGET_BRANCH }}
