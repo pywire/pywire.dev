@@ -1,5 +1,5 @@
 // "The live conduit" hero: a pinned scroll story over a circuit-board grid.
-//   0 hero      the cursor is a probe: current flows along the traces toward it
+//   0 hero      the pywire chip sits on a live circuit board
 //   1 python    the server card compiles out of the grid (a .wire component)
 //   2 conduit   the old stack's tangle of routes merges into one live wire
 //   3 patch     a click crosses the wire, the server bumps state, and only the
@@ -15,6 +15,8 @@ type Rect = [number, number, number, number]
 interface Layout {
   srv: Rect
   brw: Rect
+  /** The hero's chip: center x, y and half size. */
+  chip: [number, number, number]
   ta: V2
   tb: V2
   vert: boolean
@@ -32,6 +34,7 @@ const TAIL = 1 / 5.5 // share of the scroll spent pulling the camera out
 const BEATS = [0.14, 0.36, 0.58, 0.8]
 const stepOf = (s: number) => BEATS.filter((b) => s >= b).length
 // Where the next button lands for each step (story progress), and what it says.
+// These are also the stops that scrolling snaps between.
 const NEXT: [number, string][] = [
   [0.27, 'Write Python, not a frontend'],
   [0.555, 'One conduit, no API layer'],
@@ -53,9 +56,11 @@ function layout(w: number, h: number): Layout {
     const bw = Math.min(260, w * 0.43)
     const bh = Math.min(110, h * 0.1)
     const brw: Rect = [sn(w * 0.5), sn(y(h * 0.45)), bw, bh]
+    const ch = Math.round(Math.min(52, w * 0.13))
     return {
       srv,
       brw,
+      chip: [sn(w * 0.5), sn(h * 0.33), ch],
       ta: [srv[0] - C, srv[1] - srv[3]],
       tb: [brw[0] + C, brw[1] + brw[3]],
       vert: true,
@@ -65,7 +70,15 @@ function layout(w: number, h: number): Layout {
   const bw = Math.min(210, w * 0.17)
   const bh = Math.min(136, h * 0.17)
   const brw: Rect = [sn(w * 0.7), sn(y(h * 0.4)), bw, bh]
-  return { srv, brw, ta: [srv[0] + srv[2], srv[1]], tb: [brw[0] - brw[2], brw[1]], vert: false }
+  const ch = Math.round(Math.min(88, Math.max(56, w * 0.055)))
+  return {
+    srv,
+    brw,
+    chip: [sn(w * 0.72), sn(h * 0.5), ch],
+    ta: [srv[0] + srv[2], srv[1]],
+    tb: [brw[0] - brw[2], brw[1]],
+    vert: false,
+  }
 }
 
 /** A lane as polyline points, matching `lane()` in the shader. */
@@ -163,6 +176,7 @@ const UNIFORMS = [
   'u_tx',
   'u_arcUp',
   'u_arcDn',
+  'u_chip',
 ]
 
 interface Arc {
@@ -188,6 +202,7 @@ export function mountStory(root: HTMLElement) {
   const browserCount = q('[data-count="browser"]')
   const button = q<HTMLButtonElement>('[data-add]')
   const reduce = reducedMotion()
+  const chipEl = q('[data-ov="core"]')
   const next = q<HTMLButtonElement>('[data-next]')
   const nextLabel = q('[data-next-label]')
 
@@ -214,6 +229,14 @@ export function mountStory(root: HTMLElement) {
   let flow = 0
   let energy = 0
   let lastScroll = 0
+  const paced: number[] = []
+  // Move toward `to`, forward no faster than 1/`secs` per second. Backward is
+  // quick, and without a frame delta (a still frame) it snaps.
+  const pace = (k: number, to: number, secs: number, dt: number) => {
+    const v = paced[k] ?? to
+    paced[k] = dt > 0 && to > v ? Math.min(to, v + dt / secs) : dt > 0 ? Math.max(to, v - dt * 3) : to
+    return paced[k]
+  }
   let scrollRange = 1
 
   const setText = (n: HTMLElement, v: string) => {
@@ -287,6 +310,7 @@ export function mountStory(root: HTMLElement) {
       len = pathLength(main)
       size(srvEl, L.srv, h)
       size(brwEl, L.brw, h)
+      size(chipEl, [L.chip[0], L.chip[1], L.chip[2], L.chip[2]], h)
       root.dataset.orient = L.vert ? 'portrait' : 'landscape'
       scrollRange = Math.max(1, root.offsetHeight - innerHeight)
       const mid = pointAt(main, len / 2)
@@ -305,12 +329,15 @@ export function mountStory(root: HTMLElement) {
     const { s, out } = split(st.scroll)
     const [cx, cy, z] = camera(s, out, L, w, h)
 
-    const srvOn = ramp(s, 0.14, 0.14)
-    const brwOn = ramp(s, 0.36, 0.1)
-    const draw = ramp(s, 0.4, 0.08)
+    // Reveals follow the scroll but never faster than their own pace, so a
+    // quick scroll can't rush the server compiling or the wire drawing in.
+    const srvOn = pace(0, ramp(s, 0.14, 0.14), 1.3, dt)
+    const brwOn = pace(1, ramp(s, 0.36, 0.1), 1.0, dt)
+    const draw = pace(2, ramp(s, 0.4, 0.08), 0.7, dt)
     const stackVis = ramp(s, 0.4, 0.04)
-    const merge = ramp(s, 0.47, 0.07)
-    const tx = ramp(s, 0.8, 0.06)
+    const merge = pace(3, ramp(s, 0.47, 0.07), 1.0, dt)
+    const tx = pace(4, ramp(s, 0.8, 0.06), 0.7, dt)
+    const chipOn = 1 - ramp(s, 0.02, 0.09)
     const conv = ramp(s, 0.12, 0.06) * (1 - ramp(s, 0.3, 0.06))
     live = s >= 0.56 && out < 0.9
 
@@ -399,10 +426,12 @@ export function mountStory(root: HTMLElement) {
     set('u_tx', tx)
     set('u_arcUp', ...arcU(up))
     set('u_arcDn', ...arcU(dn))
+    set('u_chip', ...L.chip, chipOn)
 
     // HTML overlays share the camera: one transform maps world to screen.
     world.style.transform = `translate(${w / 2 - cx * z}px, ${h / 2 - (h - cy) * z}px) scale(${z})`
     const fade = clamp01(1 - out * 2.2)
+    chipEl.style.opacity = String(ramp(chipOn, 0.4, 0.6))
     srvEl.style.opacity = String(ramp(srvOn, 0.55, 0.45) * fade)
     brwEl.style.opacity = String(ramp(brwOn, 0.5, 0.5) * fade)
     const cardOn = brwOn > 0.9 && fade > 0.5
@@ -445,13 +474,119 @@ export function mountStory(root: HTMLElement) {
   }
   button.addEventListener('click', onAdd)
 
-  const onNext = () => {
-    const [target] = NEXT[Math.max(0, cur)]
+  // Stops, as page scroll offsets: the hero, each beat, and the end of the
+  // story. Between the first and last, a scroll gesture past a small
+  // threshold glides to the next stop instead of scrolling freely, slowly
+  // enough to show each transition. Reduced motion keeps native scrolling.
+  const stops = () => {
     const r = root.getBoundingClientRect()
     const range = r.height - innerHeight
     const top = scrollY + r.top
-    const y = top + (target < 0 ? 1 : target * (1 - TAIL)) * range
-    scrollTo({ top: y, behavior: reduce.matches ? 'auto' : 'smooth' })
+    const st = [0, ...NEXT.map(([t]) => (t < 0 ? 1 : t * (1 - TAIL)))].map((f) => Math.round(top + f * range))
+    // The story starts just under the nav: the hero stop is the page top.
+    if (top < innerHeight) st[0] = 0
+    return st
+  }
+  let glide = 0
+  let gliding = false
+  let quietAt = -Infinity
+  let acc = 0
+  const easeInOut = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t)
+  const glideTo = (y: number) => {
+    cancelAnimationFrame(glide)
+    const y0 = scrollY
+    const span = stops().at(-1)! - stops()[0]
+    const dur = 1000 * Math.min(2.4, Math.max(1.3, 1.1 + (6 * Math.abs(y - y0)) / Math.max(1, span)))
+    const t0 = performance.now()
+    gliding = true
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur)
+      // 'instant': the site sets scroll-behavior: smooth, which would lag every step.
+      scrollTo({ top: y0 + (y - y0) * easeInOut(t), behavior: 'instant' })
+      if (t < 1) glide = requestAnimationFrame(tick)
+      else {
+        gliding = false
+        quietAt = performance.now()
+      }
+    }
+    glide = requestAnimationFrame(tick)
+  }
+  // The stop to glide to from here in direction `dir`, or null to scroll natively.
+  const stopFrom = (dir: number) => {
+    const st = stops()
+    const y = scrollY
+    if (y < st[0] - 2 || y > st[st.length - 1] + 2) return null
+    const ahead = dir > 0 ? st.filter((v) => v > y + 2) : st.filter((v) => v < y - 2).reverse()
+    return ahead[0] ?? null
+  }
+  const snapOn = () => !!hero && !reduce.matches
+  const onWheel = (e: WheelEvent) => {
+    if (!snapOn() || e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return
+    const now = performance.now()
+    // Swallow input while gliding and the momentum tail that follows it.
+    if (gliding || now - quietAt < 220) {
+      if (stopFrom(Math.sign(e.deltaY)) !== null || gliding) {
+        e.preventDefault()
+        quietAt = gliding ? 0 : now
+      }
+      return
+    }
+    const target = stopFrom(Math.sign(e.deltaY))
+    if (target === null) return
+    e.preventDefault()
+    if (Math.sign(acc) !== Math.sign(e.deltaY)) acc = 0
+    acc += e.deltaY * (e.deltaMode === 1 ? 32 : 1)
+    if (Math.abs(acc) > 40) {
+      acc = 0
+      glideTo(target)
+    }
+  }
+  let touchY: number | null = null
+  const onTouchStart = (e: TouchEvent) => {
+    touchY = e.touches.length === 1 ? e.touches[0].clientY : null
+  }
+  const onTouchMove = (e: TouchEvent) => {
+    if (!snapOn() || touchY === null) return
+    const dy = touchY - e.touches[0].clientY
+    if (gliding || (Math.abs(dy) > 6 && stopFrom(Math.sign(dy)) !== null)) e.preventDefault()
+  }
+  const onTouchEnd = (e: TouchEvent) => {
+    if (!snapOn() || touchY === null || gliding) return
+    const dy = touchY - e.changedTouches[0].clientY
+    touchY = null
+    if (Math.abs(dy) < 36) return
+    const target = stopFrom(Math.sign(dy))
+    if (target !== null) glideTo(target)
+  }
+  const KEYS: Record<string, number> = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }
+  const onKey = (e: KeyboardEvent) => {
+    const dir = KEYS[e.key]
+    const el = e.target as HTMLElement
+    if (
+      !snapOn() ||
+      !dir ||
+      e.altKey ||
+      e.ctrlKey ||
+      e.metaKey ||
+      el.closest('input, textarea, select, [contenteditable]') ||
+      (e.key === ' ' && el.closest('button, a'))
+    )
+      return
+    const target = stopFrom(e.shiftKey && e.key === ' ' ? -1 : dir)
+    if (target === null) return
+    e.preventDefault()
+    if (!gliding) glideTo(target)
+  }
+  addEventListener('wheel', onWheel, { passive: false })
+  addEventListener('touchstart', onTouchStart, { passive: true })
+  addEventListener('touchmove', onTouchMove, { passive: false })
+  addEventListener('touchend', onTouchEnd, { passive: true })
+  addEventListener('keydown', onKey)
+
+  const onNext = () => {
+    const target = stopFrom(1) ?? stops()[Math.max(0, cur) + 1]
+    if (reduce.matches || !hero) scrollTo(0, target)
+    else glideTo(target)
   }
   next.addEventListener('click', onNext)
 
@@ -459,6 +594,12 @@ export function mountStory(root: HTMLElement) {
     button.removeEventListener('click', onAdd)
     next.removeEventListener('click', onNext)
     removeEventListener('scroll', onScroll)
+    removeEventListener('wheel', onWheel)
+    removeEventListener('touchstart', onTouchStart)
+    removeEventListener('touchmove', onTouchMove)
+    removeEventListener('touchend', onTouchEnd)
+    removeEventListener('keydown', onKey)
+    cancelAnimationFrame(glide)
     hero?.destroy()
   }
 }

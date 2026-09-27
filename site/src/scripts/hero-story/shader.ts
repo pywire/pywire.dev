@@ -4,6 +4,7 @@
 // space (CSS px, origin bottom-left), seen through a 2D camera `u_cam` =
 // (x, y, zoom). The server card and browser window are HTML laid over the top;
 // the shader draws everything between and around them:
+//   - the pywire chip on the hero, its pins fanning out into the board (u_chip)
 //   - the grid and a board of short traces that conduct now and then; scrolling
 //     speeds up the clock that drives them (u_flow) and brightens them (u_energy)
 //   - the server and browser footprints, which "compile" out of grid cells as
@@ -20,7 +21,7 @@ uniform vec3 u_bg;uniform vec3 u_ink;uniform vec3 u_acc;
 uniform vec3 u_cam;uniform float u_out;uniform float u_amb;uniform float u_flow;uniform float u_energy;
 uniform vec4 u_srv;uniform vec4 u_brw;uniform vec2 u_ta;uniform vec2 u_tb;uniform float u_vert;
 uniform float u_srvOn;uniform float u_brwOn;uniform float u_srvHit;uniform float u_brwHit;uniform float u_conv;
-uniform float u_draw;uniform vec2 u_stack;uniform float u_tx;uniform vec4 u_arcUp;uniform vec4 u_arcDn;
+uniform vec4 u_chip;uniform float u_draw;uniform vec2 u_stack;uniform float u_tx;uniform vec4 u_arcUp;uniform vec4 u_arcDn;
 const float C=32.0;
 float aa,W,Z;
 float h1(float n){return fract(sin(n*127.1+311.7)*43758.5453);}
@@ -102,6 +103,47 @@ vec3 bus(vec2 g,float sd){
   float cur=fire*max(max(lit,core*1.4)*lines,land);
   return vec3(max(lines,pads),cur,0.0);
 }
+// The pywire chip on the hero: pins on all four sides, each fanning out into
+// a trace that ends in a via. u_chip is (center, half size, visibility); as
+// visibility drops the traces retract into the chip. Returns (traces and
+// pins, conduction light).
+vec2 chip(vec2 css){
+  vec2 q=css-u_chip.xy;float hs=u_chip.z;float on=u_chip.w;
+  // Fold into the frame of the nearest side, with that side facing +x.
+  bool sx=abs(q.x)>=abs(q.y);
+  vec2 f=sx?vec2(abs(q.x),q.y*sign(q.x)):vec2(abs(q.y),-q.x*sign(q.y));
+  float side=sx?(q.x>0.0?0.0:2.0):(q.y>0.0?1.0:3.0);
+  float pitch=hs*1.6/7.0;
+  float lines=0.0,cur=0.0;
+  for(int i=0;i<8;i++){
+    float fi=float(i);float id=side*8.0+fi;
+    float oy=(fi-3.5)*pitch;
+    float sg=sign(oy);float k=abs(oy)*0.9;
+    vec2 A=vec2(hs+8.0,oy);vec2 P1=vec2(hs+22.0,oy);vec2 P2=vec2(P1.x+k,oy+sg*k);
+    float len=(70.0+170.0*h1(id+4.0))*clamp(hs/80.0,0.6,1.0);
+    vec2 B=vec2(P2.x+len,P2.y);
+    vec2 s1=seg(f,A,P1),s2=seg(f,P1,P2),s3=seg(f,P2,B);
+    float l1=14.0,l2=length(P2-P1),Lt=l1+l2+len;
+    vec2 r=s1;if(s2.x<r.x)r=vec2(s2.x,l1+s2.y);if(s3.x<r.x)r=vec2(s3.x,l1+l2+s3.y);
+    float vis=step(r.y,Lt*on);
+    float vd=length(f-B);
+    float line=ln(r.x,1.1)*step(4.0,vd)*vis;
+    float via=ln(abs(vd-3.5),1.1)*step(0.999,on);
+    // The pin itself: a short stub off the body.
+    vec2 pd=abs(f-vec2(hs+4.0,oy))-vec2(4.0,2.2);
+    float pin=ln(max(max(pd.x,pd.y),0.0),1.0);
+    lines=max(lines,max(max(line,via),pin));
+    // Data runs in more than out: most traces conduct toward the chip.
+    float P=1.4+1.6*h1(id+9.0);float cyc=u_flow/P+h1(id+2.0);float cn=floor(cyc);
+    float age=fract(cyc)*P;float fire=step(h1(id+cn*1.3),0.45+0.4*u_energy);
+    float inw=step(0.25,h1(id+cn*3.1));
+    float qd=inw>0.5?Lt-r.y:r.y;float head=age*1100.0;
+    float lit=step(qd,head)*exp(-max(age-Lt/1100.0,0.0)*2.4);
+    float core=exp(-abs(qd-head)/5.0)*step(head,Lt);
+    cur=max(cur,fire*max(lit,core*1.4)*max(line,pin*step(0.5,inw)*lit));
+  }
+  return vec2(lines,cur)*step(0.001,on);
+}
 void main(){
   vec2 size=u_res/u_px;Z=u_cam.z;aa=1.0/(u_px*Z);W=0.5/Z;
   vec2 scr=gl_FragCoord.xy/u_px;
@@ -133,8 +175,17 @@ void main(){
   // then a bus conducts and lights end to end almost at once.
   vec3 top=bus(g,0.0),bot=bus(g,0.5);
   float clr=mix(1.0,smoothstep(8.0,56.0,sdS),u_srvOn)*mix(1.0,smoothstep(8.0,56.0,sdB),u_brwOn);
-  float trace=max(top.x,bot.x*0.5)*clr;
-  float cur=max(top.y,bot.y*0.55)*clr*(0.8+0.5*u_energy);
+  vec2 ch=vec2(0.0);float sdCh=1e4;
+  if(u_chip.w>0.001){
+    sdCh=sdBox(css,vec4(u_chip.xy,u_chip.zz));
+    if(sdCh<460.0)ch=chip(css);
+    clr*=mix(1.0,smoothstep(160.0,300.0,sdCh),u_chip.w);
+  }
+  float trace=max(max(top.x,bot.x*0.5)*clr,ch.x);
+  float cur=max(max(top.y,bot.y*0.55)*clr,ch.y)*(0.8+0.5*u_energy);
+  // The chip's own corners are rounded (22% in CSS); keep the halo round too.
+  float rc=u_chip.z*0.44;float sdChR=sdBox(css,vec4(u_chip.xy,u_chip.zz-rc))-rc;
+  float haloC=exp(-max(sdChR,0.0)/40.0)*u_chip.w*step(0.0,sdChR);
 
   // Wires.
   float wire=0.0,spark=0.0,glow=0.0,stack=0.0;
@@ -179,7 +230,7 @@ void main(){
   col=mix(col,u_ink,clamp(stack*0.45,0.0,1.0));
   col=mix(col,u_acc,clamp(inW+fS*0.7+fB*0.7,0.0,1.0));
   col=mix(col,u_acc,clamp(wire*0.45+spark,0.0,1.0));
-  float halo=haloS+haloB;
+  float halo=haloS+haloB+haloC*0.6;
   col+=(u_acc*(halo*0.22+glow*0.35+cur*u_amb*0.18))*(1.0-u_light);
   col=mix(col,u_acc,clamp((halo*0.12+glow*0.25)*u_light,0.0,1.0));
   vec2 uv=gl_FragCoord.xy/u_res;
