@@ -1,3 +1,16 @@
+// Pages answers "/guides/forms" with a 308 to "/guides/forms/". It knows
+// nothing of the /docs mount, so put the prefix back on same-site redirects;
+// otherwise every docs URL without a trailing slash lands on a landing 404.
+export function withDocsBase(response, docsTarget) {
+  const location = response.headers.get("Location");
+  if (response.status < 300 || response.status >= 400 || !location) return response;
+  const target = new URL(location, `https://${docsTarget}/`);
+  if (target.hostname !== docsTarget) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Location", `/docs${target.pathname}${target.search}${target.hash}`);
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -79,10 +92,10 @@ export default {
     }
 
     // --- 4. ROUTE TO DOCS ---
-    if (path.startsWith("/docs")) {
+    if (path === "/docs" || path.startsWith("/docs/")) {
       // Strip "/docs" so the origin sees "/_astro/..." or "/"
       const newPath = path.replace(/^\/docs/, "") || "/";
-      return proxy(docsTarget, newPath);
+      return withDocsBase(await proxy(docsTarget, newPath), docsTarget);
     }
 
     // --- 5. ROUTE TO LANDING ---
