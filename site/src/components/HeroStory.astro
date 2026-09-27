@@ -94,6 +94,7 @@ const landPath = WORLD.flatMap((row, r) =>
         <circle class="map-packet" data-packet r="1.3"></circle>
         <g data-you>
           <g class="you">
+            <circle class="you-ping" r="3"></circle>
             <circle class="you-ring" r="3"></circle>
             <circle class="you-core" r="1.4"></circle>
             <text y="8">you</text>
@@ -209,6 +210,9 @@ const landPath = WORLD.flatMap((row, r) =>
 <style lang="scss">
   .story {
     --gut: clamp(1.125rem, 4vw, 3.5rem);
+    // Room kept clear at the bottom for a browser toolbar floating over the
+    // page (iPhone Safari); see the @supports rule below.
+    --dock: 0px;
 
     // accessible-astro's colors.css overrides the site's --color-primary-* tokens,
     // so the story's buttons take the wire ladder directly.
@@ -621,6 +625,20 @@ const landPath = WORLD.flatMap((row, r) =>
   }
 
   .you {
+    // A click leaving you: the same ping as an edge taking it.
+    .you-ping {
+      transform-box: fill-box;
+      transform-origin: center;
+      opacity: 0;
+      fill: none;
+      stroke: var(--foreground-color);
+      stroke-width: 0.6;
+    }
+
+    &:global(.hit) .you-ping {
+      animation: beacon-ping 0.5s ease-out;
+    }
+
     .you-ring {
       fill: none;
       stroke: var(--foreground-color);
@@ -748,7 +766,7 @@ const landPath = WORLD.flatMap((row, r) =>
 
     &.low {
       top: auto;
-      bottom: clamp(84px, 13svh, 150px);
+      bottom: calc(clamp(84px, 13svh, 150px) + var(--dock));
     }
 
     h2 {
@@ -870,7 +888,7 @@ const landPath = WORLD.flatMap((row, r) =>
     position: absolute;
     // On the hero the stage still sits under the sticky nav, so its bottom
     // edge is below the fold; lift the button until the story is pinned.
-    bottom: 80px;
+    bottom: calc(80px + var(--dock));
     left: 50%;
     align-items: center;
     gap: 12px;
@@ -913,7 +931,7 @@ const landPath = WORLD.flatMap((row, r) =>
   }
 
   :global([data-story]:not([data-step='0'])) .next {
-    bottom: 22px;
+    bottom: calc(22px + var(--dock));
   }
 
   .next-k {
@@ -968,6 +986,16 @@ const landPath = WORLD.flatMap((row, r) =>
     }
   }
 
+  // iPhone Safari floats its toolbar over the bottom of the page, and the
+  // page's viewport runs underneath it.
+  @supports (-webkit-touch-callout: none) {
+    @media (max-width: 599px) {
+      .story {
+        --dock: 72px;
+      }
+    }
+  }
+
   // Short phone screens (Safari or Chrome with their toolbars showing): tighter
   // copy, so the diagram above it keeps a readable size.
   @media (max-width: 799px) and (max-height: 760px) {
@@ -976,7 +1004,7 @@ const landPath = WORLD.flatMap((row, r) =>
       gap: 12px;
 
       &.low {
-        bottom: 78px;
+        bottom: calc(78px + var(--dock));
       }
 
       h2 {

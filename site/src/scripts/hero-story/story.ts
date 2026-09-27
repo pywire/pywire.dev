@@ -333,6 +333,7 @@ export function mountStory(root: HTMLElement) {
   let near = -1
   let sentTo = 0
   let youAt: V2 = cities[0]
+  let edgeClick = 9 // seconds since the trip last clicked
   let brwAt = ''
   let chipAt: V2 = [0, 0]
   const paced: number[] = []
@@ -358,6 +359,7 @@ export function mountStory(root: HTMLElement) {
     // Stateless: the event carries its signed state along to the nearest edge.
     setText(chipText, edge > 0.5 ? '@click + state' : '@click')
     sentTo = Math.max(0, near)
+    if (edge > 0.5) flash(youMark, 'hit')
     chipT = 0
   }
   const onServer = () => {
@@ -464,8 +466,8 @@ export function mountStory(root: HTMLElement) {
       L = layout(w, h, {
         copyTop: Math.min(...steps.slice(1).map((el) => el.offsetTop)),
         heroBottom: steps[0].offsetTop + steps[0].offsetHeight,
-        // On the hero the next button sits 80px up (see .next).
-        nextTop: h - 80 - next.offsetHeight,
+        // On the hero the next button sits 80px up, plus the dock (see .next).
+        nextTop: h - 80 - (parseFloat(getComputedStyle(root).getPropertyValue('--dock')) || 0) - next.offsetHeight,
       })
       main = lanePath(L, 0, 0)
       len = pathLength(main)
@@ -549,12 +551,6 @@ export function mountStory(root: HTMLElement) {
           button.classList.add('your-turn')
         }
       }
-      if (demo >= 0 && !demoDone) {
-        const t = demo - (0.6 + clicks - 1)
-        ghost.style.opacity = String(clamp01(demo * 4) * (s >= 0.6 && s < 0.8 ? 1 : 0))
-        ghost.classList.toggle('down', clicks > 0 && t >= 0 && t < 0.15)
-      } else ghost.style.opacity = '0'
-
       if (live) {
         // In the transport beat, keepalive pings walk the three lanes.
         // Stateless holds no connection open, so no keepalives in the edge beat.
@@ -583,8 +579,23 @@ export function mountStory(root: HTMLElement) {
         }
         // Two clicks in each city: on arrival, then once more.
         const clicked = (at: number) => legT - dt < at && legT >= at
-        if (live && (clicked(GLIDE) || clicked(GLIDE + 0.8))) queued = Math.min(queued + 1, 4)
+        if (live && (clicked(GLIDE) || clicked(GLIDE + 0.8))) {
+          flash(button, 'pressed')
+          edgeClick = 0
+          queued = Math.min(queued + 1, 4)
+        }
       }
+      edgeClick += dt
+      // The cursor that presses Add one: the scripted demo in beat 3, then
+      // every click on the trip in the edge beat.
+      if (demo >= 0 && !demoDone) {
+        const t = demo - (0.6 + clicks - 1)
+        ghost.style.opacity = String(clamp01(demo * 4) * (s >= 0.6 && s < 0.8 ? 1 : 0))
+        ghost.classList.toggle('down', clicks > 0 && t >= 0 && t < 0.15)
+      } else if (edge > 0.9 && live) {
+        ghost.style.opacity = String(clamp01((edge - 0.9) * 10))
+        ghost.classList.toggle('down', edgeClick < 0.15)
+      } else ghost.style.opacity = '0'
       const hop = edge > 0.5 ? HOP : ARC
       if (up) {
         const before = up.t
