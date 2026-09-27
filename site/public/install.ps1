@@ -36,4 +36,4 @@ if (-not (Get-Command "uv" -ErrorAction SilentlyContinue)) {
 
 # Run create-pywire-app
 Write-Info "Running create-pywire-app..."
-uvx create-pywire-app @args
+uvx create-pywire-app@latest @args
