@@ -1,4 +1,4 @@
-// Tests for the `curl -fsSL https://pywire.dev/install.sh | sh` installer.
+// Tests for the `curl -fsSL https://pywire.dev/install | sh` installer.
 // Each test runs the real script under `sh` with a sandboxed HOME and a PATH
 // of fake `uv`/`uvx`/`curl` binaries that log how they were called.
 import { test } from 'node:test'
@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
 const PUBLIC = new URL('../site/public/', import.meta.url).pathname
-const SCRIPT = join(PUBLIC, 'install.sh')
+const SCRIPT = join(PUBLIC, 'install')
 const SYSTEM_PATH = '/usr/bin:/bin'
 
 function exe(path, body) {
@@ -39,7 +39,7 @@ function calls(box) {
   return existsSync(box.log) ? readFileSync(box.log, 'utf8').trim().split('\n') : []
 }
 
-// Like `curl -fsSL https://pywire.dev/install.sh | sh -s -- ARGS`: script on stdin.
+// Like `curl -fsSL https://pywire.dev/install | sh -s -- ARGS`: script on stdin.
 function runPiped(box, args = [], env = {}) {
   return spawnSync('sh', ['-s', '--', ...args], {
     input: readFileSync(SCRIPT),
@@ -48,11 +48,8 @@ function runPiped(box, args = [], env = {}) {
   })
 }
 
-test('install.sh is served, and the old /install path still works', () => {
-  assert.ok(existsSync(SCRIPT), 'site/public/install.sh must exist')
-  const redirects = readFileSync(join(PUBLIC, '_redirects'), 'utf8')
-  assert.match(redirects, /^\/install\s+\/install\.sh\s+301$/m)
-  assert.ok(!existsSync(join(PUBLIC, 'install')), 'the old copy is replaced by the redirect')
+test('is served at /install', () => {
+  assert.ok(existsSync(SCRIPT), 'site/public/install must exist')
 })
 
 test('with uv installed, launches the latest create-pywire-app and passes args through', () => {
