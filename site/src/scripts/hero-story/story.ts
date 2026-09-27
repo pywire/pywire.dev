@@ -8,6 +8,7 @@
 // The camera frames each beat; HTML cards ride the same camera transform.
 import { createShaderHero, reducedMotion, type HeroState } from './runtime'
 import { storyFrag } from './shader'
+import { snapScroll } from './snap'
 
 type V2 = [number, number]
 /** Center x, y (world, origin bottom-left) and half width, half height. */
@@ -282,7 +283,8 @@ export function mountStory(root: HTMLElement) {
   const split = (p: number) => ({ s: Math.min(1, p / (1 - TAIL)), out: Math.max(0, (p - (1 - TAIL)) / TAIL) })
   const updateSteps = (s: number, out: number) => {
     let i = stepOf(s)
-    if (out > 0.2) i = -1
+    // Hysteresis, so hovering around the hand-off doesn't flicker the copy.
+    if (out > (cur === -1 ? 0.14 : 0.22)) i = -1
     if (i !== cur) {
       cur = i
       steps.forEach((node, j) => node.classList.toggle('on', j === i))
@@ -331,7 +333,7 @@ export function mountStory(root: HTMLElement) {
 
     // Reveals follow the scroll but never faster than their own pace, so a
     // quick scroll can't rush the server compiling or the wire drawing in.
-    const srvOn = pace(0, ramp(s, 0.14, 0.14), 1.3, dt)
+    const srvOn = pace(0, ramp(s, 0.14, 0.14), 1.1, dt)
     const brwOn = pace(1, ramp(s, 0.36, 0.1), 1.0, dt)
     const draw = pace(2, ramp(s, 0.4, 0.08), 0.7, dt)
     const stackVis = ramp(s, 0.4, 0.04)
@@ -475,9 +477,8 @@ export function mountStory(root: HTMLElement) {
   button.addEventListener('click', onAdd)
 
   // Stops, as page scroll offsets: the hero, each beat, and the end of the
-  // story. Between the first and last, a scroll gesture past a small
-  // threshold glides to the next stop instead of scrolling freely, slowly
-  // enough to show each transition. Reduced motion keeps native scrolling.
+  // story. Scrolling snaps between them (see snap.ts); reduced motion keeps
+  // native scrolling.
   const stops = () => {
     const r = root.getBoundingClientRect()
     const range = r.height - innerHeight
@@ -487,106 +488,10 @@ export function mountStory(root: HTMLElement) {
     if (top < innerHeight) st[0] = 0
     return st
   }
-  let glide = 0
-  let gliding = false
-  let quietAt = -Infinity
-  let acc = 0
-  const easeInOut = (t: number) => 0.5 - 0.5 * Math.cos(Math.PI * t)
-  const glideTo = (y: number) => {
-    cancelAnimationFrame(glide)
-    const y0 = scrollY
-    const span = stops().at(-1)! - stops()[0]
-    const dur = 1000 * Math.min(2.4, Math.max(1.3, 1.1 + (6 * Math.abs(y - y0)) / Math.max(1, span)))
-    const t0 = performance.now()
-    gliding = true
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - t0) / dur)
-      // 'instant': the site sets scroll-behavior: smooth, which would lag every step.
-      scrollTo({ top: y0 + (y - y0) * easeInOut(t), behavior: 'instant' })
-      if (t < 1) glide = requestAnimationFrame(tick)
-      else {
-        gliding = false
-        quietAt = performance.now()
-      }
-    }
-    glide = requestAnimationFrame(tick)
-  }
-  // The stop to glide to from here in direction `dir`, or null to scroll natively.
-  const stopFrom = (dir: number) => {
-    const st = stops()
-    const y = scrollY
-    if (y < st[0] - 2 || y > st[st.length - 1] + 2) return null
-    const ahead = dir > 0 ? st.filter((v) => v > y + 2) : st.filter((v) => v < y - 2).reverse()
-    return ahead[0] ?? null
-  }
-  const snapOn = () => !!hero && !reduce.matches
-  const onWheel = (e: WheelEvent) => {
-    if (!snapOn() || e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return
-    const now = performance.now()
-    // Swallow input while gliding and the momentum tail that follows it.
-    if (gliding || now - quietAt < 220) {
-      if (stopFrom(Math.sign(e.deltaY)) !== null || gliding) {
-        e.preventDefault()
-        quietAt = gliding ? 0 : now
-      }
-      return
-    }
-    const target = stopFrom(Math.sign(e.deltaY))
-    if (target === null) return
-    e.preventDefault()
-    if (Math.sign(acc) !== Math.sign(e.deltaY)) acc = 0
-    acc += e.deltaY * (e.deltaMode === 1 ? 32 : 1)
-    if (Math.abs(acc) > 40) {
-      acc = 0
-      glideTo(target)
-    }
-  }
-  let touchY: number | null = null
-  const onTouchStart = (e: TouchEvent) => {
-    touchY = e.touches.length === 1 ? e.touches[0].clientY : null
-  }
-  const onTouchMove = (e: TouchEvent) => {
-    if (!snapOn() || touchY === null) return
-    const dy = touchY - e.touches[0].clientY
-    if (gliding || (Math.abs(dy) > 6 && stopFrom(Math.sign(dy)) !== null)) e.preventDefault()
-  }
-  const onTouchEnd = (e: TouchEvent) => {
-    if (!snapOn() || touchY === null || gliding) return
-    const dy = touchY - e.changedTouches[0].clientY
-    touchY = null
-    if (Math.abs(dy) < 36) return
-    const target = stopFrom(Math.sign(dy))
-    if (target !== null) glideTo(target)
-  }
-  const KEYS: Record<string, number> = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }
-  const onKey = (e: KeyboardEvent) => {
-    const dir = KEYS[e.key]
-    const el = e.target as HTMLElement
-    if (
-      !snapOn() ||
-      !dir ||
-      e.altKey ||
-      e.ctrlKey ||
-      e.metaKey ||
-      el.closest('input, textarea, select, [contenteditable]') ||
-      (e.key === ' ' && el.closest('button, a'))
-    )
-      return
-    const target = stopFrom(e.shiftKey && e.key === ' ' ? -1 : dir)
-    if (target === null) return
-    e.preventDefault()
-    if (!gliding) glideTo(target)
-  }
-  addEventListener('wheel', onWheel, { passive: false })
-  addEventListener('touchstart', onTouchStart, { passive: true })
-  addEventListener('touchmove', onTouchMove, { passive: false })
-  addEventListener('touchend', onTouchEnd, { passive: true })
-  addEventListener('keydown', onKey)
+  const snap = snapScroll(stops, () => !!hero && !reduce.matches)
 
   const onNext = () => {
-    const target = stopFrom(1) ?? stops()[Math.max(0, cur) + 1]
-    if (reduce.matches || !hero) scrollTo(0, target)
-    else glideTo(target)
+    if (!snap.go(1)) scrollTo(0, stops()[Math.max(0, cur) + 1] ?? stops().at(-1)!)
   }
   next.addEventListener('click', onNext)
 
@@ -594,12 +499,7 @@ export function mountStory(root: HTMLElement) {
     button.removeEventListener('click', onAdd)
     next.removeEventListener('click', onNext)
     removeEventListener('scroll', onScroll)
-    removeEventListener('wheel', onWheel)
-    removeEventListener('touchstart', onTouchStart)
-    removeEventListener('touchmove', onTouchMove)
-    removeEventListener('touchend', onTouchEnd)
-    removeEventListener('keydown', onKey)
-    cancelAnimationFrame(glide)
+    snap.destroy()
     hero?.destroy()
   }
 }
