@@ -466,8 +466,8 @@ export function mountStory(root: HTMLElement) {
       L = layout(w, h, {
         copyTop: Math.min(...steps.slice(1).map((el) => el.offsetTop)),
         heroBottom: steps[0].offsetTop + steps[0].offsetHeight,
-        // On the hero the next button sits 80px up, plus the dock (see .next).
-        nextTop: h - 80 - (parseFloat(getComputedStyle(root).getPropertyValue('--dock')) || 0) - next.offsetHeight,
+        // On the hero the next button sits 80px up, plus what's kept clear (see .next).
+        nextTop: h - 80 - clear() - next.offsetHeight,
       })
       main = lanePath(L, 0, 0)
       len = pathLength(main)
@@ -674,6 +674,24 @@ export function mountStory(root: HTMLElement) {
     updateSteps(sa, out)
   }
 
+  // The stage is 100svh, but some browsers show less than that (iPhone Safari
+  // counts the strip under its floating toolbar); keep the part below what's
+  // shown clear, so the copy and the next button stay in view.
+  let over = 0
+  const clear = () => over + (parseFloat(getComputedStyle(root).getPropertyValue('--dock')) || 0)
+  const fitOver = () => {
+    const vv = visualViewport
+    if (vv && Math.abs(vv.scale - 1) > 0.01) return // pinch zoom
+    const v = Math.max(0, Math.round(canvas.clientHeight - (vv?.height ?? innerHeight)))
+    if (v === over) return
+    over = v
+    root.style.setProperty('--over', `${v}px`)
+    geom = ''
+  }
+  fitOver()
+  visualViewport?.addEventListener('resize', fitOver)
+  addEventListener('resize', fitOver)
+
   const hero = createShaderHero(root, canvas, storyFrag, UNIFORMS, frame)
   // The layout measures the copy, which moves once the web fonts load.
   void document.fonts?.ready.then(() => (geom = ''))
@@ -725,6 +743,8 @@ export function mountStory(root: HTMLElement) {
     button.removeEventListener('click', onAdd)
     next.removeEventListener('click', onNext)
     removeEventListener('scroll', onScroll)
+    visualViewport?.removeEventListener('resize', fitOver)
+    removeEventListener('resize', fitOver)
     snap.destroy()
     hero?.destroy()
   }

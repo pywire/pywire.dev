@@ -213,6 +213,9 @@ const landPath = WORLD.flatMap((row, r) =>
     // Room kept clear at the bottom for a browser toolbar floating over the
     // page (iPhone Safari); see the @supports rule below.
     --dock: 0px;
+    // Any part of the stage below what the browser shows (set by the story).
+    --over: 0px;
+    --clear: calc(var(--dock) + var(--over));
 
     // accessible-astro's colors.css overrides the site's --color-primary-* tokens,
     // so the story's buttons take the wire ladder directly.
@@ -766,7 +769,7 @@ const landPath = WORLD.flatMap((row, r) =>
 
     &.low {
       top: auto;
-      bottom: calc(clamp(84px, 13svh, 150px) + var(--dock));
+      bottom: calc(clamp(84px, 13svh, 150px) + var(--clear));
     }
 
     h2 {
@@ -888,7 +891,7 @@ const landPath = WORLD.flatMap((row, r) =>
     position: absolute;
     // On the hero the stage still sits under the sticky nav, so its bottom
     // edge is below the fold; lift the button until the story is pinned.
-    bottom: calc(80px + var(--dock));
+    bottom: calc(80px + var(--clear));
     left: 50%;
     align-items: center;
     gap: 12px;
@@ -931,7 +934,7 @@ const landPath = WORLD.flatMap((row, r) =>
   }
 
   :global([data-story]:not([data-step='0'])) .next {
-    bottom: calc(22px + var(--dock));
+    bottom: calc(22px + var(--clear));
   }
 
   .next-k {
@@ -1004,7 +1007,7 @@ const landPath = WORLD.flatMap((row, r) =>
       gap: 12px;
 
       &.low {
-        bottom: calc(78px + var(--dock));
+        bottom: calc(78px + var(--clear));
       }
 
       h2 {
