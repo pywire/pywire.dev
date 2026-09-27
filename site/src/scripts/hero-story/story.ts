@@ -5,8 +5,8 @@
 //   3 patch     a click crosses the wire, the server bumps state, and only the
 //               changed text node patches; three scripted clicks, then yours
 //   4 transport the conduit splits into WebSocket, WebTransport, long polling
-//   5 edge      stateless: an edge node next to the browser answers instead of
-//               the far-off origin, and the wire gets short
+//   5 edge      stateless: edge nodes pop up everywhere, the server card goes,
+//               and every visitor, moving around, wires to the nearest node
 // The camera frames each beat; HTML cards ride the same camera transform.
 import { createShaderHero, reducedMotion, type HeroState } from './runtime'
 import { storyFrag } from './shader'
@@ -23,6 +23,9 @@ interface Layout {
   /** The edge node in step 5 (center x, y, half size) and its wire port. */
   edge: [number, number, number]
   edgePort: V2
+  /** More edge nodes (center x, y, half size) and visitors' paths between them. */
+  nodes: [number, number, number][]
+  users: [V2, V2][]
   ta: V2
   tb: V2
   vert: boolean
@@ -71,9 +74,16 @@ function layout(w: number, h: number): Layout {
     const ch = Math.round(Math.min(52, w * 0.13))
     // The edge node takes the browser's spot; the browser drops by DROP.
     const et = brw[1] + brw[3] + 20
+    const at = (x: number, t: number): V2 => [w * x, y(h * t)]
     return {
       srv,
       brw,
+      nodes: [at(0.13, 0.12), at(0.52, 0.1), at(0.87, 0.14), at(0.2, 0.27)].map(([a, b]) => [a, b, 13]),
+      users: [
+        [at(0.26, 0.15), at(0.42, 0.19)],
+        [at(0.64, 0.17), at(0.84, 0.27)],
+        [at(0.08, 0.34), at(0.36, 0.31)],
+      ],
       edge: [brw[0] + C, et, 24],
       edgePort: [brw[0] + C, et - 24],
       chip: [sn(w * 0.5), sn(h * 0.33), ch],
@@ -88,9 +98,16 @@ function layout(w: number, h: number): Layout {
   const brw: Rect = [sn(w * 0.7), sn(y(h * 0.4)), bw, bh]
   const ch = Math.round(Math.min(88, Math.max(56, w * 0.055)))
   const ex = sn(brw[0] - brw[2] - 128)
+  const at = (x: number, t: number): V2 => [w * x, y(h * t)]
   return {
     srv,
     brw,
+    nodes: [at(0.09, 0.2), at(0.3, 0.44), at(0.4, 0.13), at(0.9, 0.13)].map(([a, b]) => [a, b, 16]),
+    users: [
+      [at(0.14, 0.34), at(0.36, 0.27)],
+      [at(0.52, 0.16), at(0.74, 0.1)],
+      [at(0.24, 0.55), at(0.5, 0.52)],
+    ],
     edge: [ex, brw[1], 34],
     edgePort: [ex + 34, brw[1]],
     chip: [sn(w * 0.72), sn(h * 0.5), ch],
@@ -196,6 +213,9 @@ const UNIFORMS = [
   'u_arcUp',
   'u_arcDn',
   'u_chip',
+  'u_net',
+  ...[0, 1, 2, 3].map((i) => `u_nodes[${i}]`),
+  ...[0, 1, 2].flatMap((i) => [`u_users[${i}]`, `u_userT[${i}]`]),
 ]
 
 interface Arc {
@@ -223,7 +243,7 @@ export function mountStory(root: HTMLElement) {
   const reduce = reducedMotion()
   const chipEl = q('[data-ov="core"]')
   const edgeEl = q('[data-ov="edge"]')
-  const srvTag = q('[data-srv-tag]')
+  const nodeEls = [...root.querySelectorAll<HTMLElement>('[data-ov="node"]')]
   const next = q<HTMLButtonElement>('[data-next]')
   const nextLabel = q('[data-next-label]')
 
@@ -251,6 +271,8 @@ export function mountStory(root: HTMLElement) {
   let energy = 0
   let lastScroll = 0
   let edge = 0
+  // Visitors in the edge beat: nearest node, handoff flash, packet timer.
+  const users = [0, 1, 2].map((i) => ({ near: -1, flash: 0, t: -1.3 * i }))
   let coreAt = ''
   let laneAt = -1
   const paced: number[] = []
@@ -477,6 +499,31 @@ export function mountStory(root: HTMLElement) {
     // The chip uniform is the hero's chip early on and the edge node later.
     const onHero = sa < 0.4
     set('u_chip', ...(onHero ? L.chip : L.edge), onHero ? chipOn : edge)
+    set('u_net', edge)
+    const nodeVis = L.nodes.map((_, i) => ss(ramp(edge, 0.15 + 0.12 * i, 0.3)))
+    L.nodes.forEach((n, i) => set(`u_nodes[${i}]`, ...n, nodeVis[i]))
+    // Every visitor drifts along its path and wires to whichever node is closest.
+    const all: V2[] = [[L.edge[0], L.edge[1]], ...L.nodes.map((n): V2 => [n[0], n[1]])]
+    const uVis = ramp(edge, 0.6, 0.35)
+    L.users.forEach(([a, b], i) => {
+      const u = users[i]
+      const k = 0.5 - 0.5 * Math.cos(st.time * (0.42 + 0.09 * i) + i * 2.1)
+      const p: V2 = [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]
+      let near = 0
+      all.forEach((n, j) => {
+        if (Math.hypot(n[0] - p[0], n[1] - p[1]) < Math.hypot(all[near][0] - p[0], all[near][1] - p[1])) near = j
+      })
+      if (near !== u.near) {
+        if (u.near >= 0) u.flash = 1
+        u.near = near
+      }
+      u.flash = Math.max(0, u.flash - dt * 2.5)
+      // An event up and its patch back down every couple of seconds.
+      u.t += dt
+      if (u.t > 2.2) u.t = 0
+      set(`u_users[${i}]`, ...p, ...all[near])
+      set(`u_userT[${i}]`, uVis, u.t >= 0 && u.t < 0.5 ? u.t / 0.25 : -1, u.flash, 0)
+    })
 
     // HTML overlays share the camera: one transform maps world to screen.
     world.style.transform = `translate(${w / 2 - cx * z}px, ${h / 2 - (h - cy) * z}px) scale(${z})`
@@ -486,13 +533,15 @@ export function mountStory(root: HTMLElement) {
       coreAt = at
       const c = onHero ? L.chip : L.edge
       size(chipEl, [c[0], c[1], c[2], c[2]], h)
+      L.nodes.forEach((n, i) => nodeEls[i] && place(nodeEls[i], n[0], n[1] - n[2] - 8, h))
       if (L.vert) place(edgeEl, L.edge[0] - L.edge[2], L.edge[1], h)
       else place(edgeEl, L.edge[0], L.edge[1] - L.edge[2] - 10, h)
     }
     chipEl.style.opacity = String(onHero ? ramp(chipOn, 0.4, 0.6) : ramp(edge, 0.3, 0.6) * fade)
     edgeEl.style.opacity = String(ramp(edge, 0.5, 0.5) * fade)
-    setText(srvTag, edge > 0.5 ? 'origin' : 'server')
-    srvEl.style.opacity = String(ramp(srvOn, 0.55, 0.45) * fade * (1 - 0.6 * ee))
+    nodeEls.forEach((el, i) => (el.style.opacity = String(ramp(nodeVis[i], 0.5, 0.5) * fade)))
+    // Stateless: no one server holds the app any more; it runs on every node.
+    srvEl.style.opacity = String(ramp(srvOn, 0.55, 0.45) * fade * (1 - ee))
     brwEl.style.opacity = String(ramp(brwOn, 0.5, 0.5) * fade)
     const cardOn = live && brwOn > 0.9 && fade > 0.5
     if (button.disabled === cardOn) {

@@ -57,7 +57,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
         <div class="win-bar">
           <span class="srv-led"></span>
           <span class="win-title">counter.wire</span>
-          <span class="win-tag" data-srv-tag>server</span>
+          <span class="win-tag">server</span>
         </div>
         <div class="srv-code" set:html={counterHtml} />
       </div>
@@ -67,7 +67,11 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebSocket</span></span>
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebTransport</span></span>
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">HTTP long polling</span></span>
-      <span class="ov" data-ov="edge" aria-hidden="true"><span class="lbl lbl-edge">edge node</span></span>
+      <span class="ov" data-ov="edge" aria-hidden="true"><span class="lbl lbl-edge">nearest edge</span></span>
+      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">fra</span></span>
+      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">iad</span></span>
+      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">sin</span></span>
+      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">syd</span></span>
       <span class="ov" data-ov="chip" aria-hidden="true"><code class="wchip" data-chip-text>@click</code></span>
       <div class="brw" data-ov="browser" role="group" aria-label="Live counter demo" inert>
         <div class="win-bar" aria-hidden="true">
@@ -247,8 +251,13 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     border: 1.5px solid color-mix(in oklch, var(--accent-color) 65%, var(--border-color));
     border-radius: 22%;
     background: light-dark(var(--theme-light-bg), #11141f);
-    padding: 20%;
     color: var(--accent-color);
+
+    // Sized against the chip itself (padding % would follow the world layer).
+    :global(.core-mark) {
+      width: 72%;
+      height: 72%;
+    }
   }
 
   :global(:root.darkmode) .core {
@@ -477,6 +486,10 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     translate: -50% 0;
     border-color: color-mix(in oklch, var(--accent-color) 55%, var(--border-color));
     color: var(--accent-color);
+  }
+
+  .lbl-node {
+    translate: -50% 0;
   }
 
   :global([data-orient='portrait']) .lbl-edge {
