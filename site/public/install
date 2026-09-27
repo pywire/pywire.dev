@@ -45,4 +45,13 @@ fi
 
 # Run create-pywire-app
 info "Running create-pywire-app..."
-exec uvx create-pywire-app "$@" < /dev/tty
+# `curl | sh` feeds this script on stdin, so reattach the terminal for
+# create-pywire-app's prompts, but only if there is one (CI, containers and
+# agents have no /dev/tty).
+if [ -t 0 ]; then
+    exec uvx create-pywire-app "$@"
+elif (exec < /dev/tty) 2>/dev/null; then
+    exec uvx create-pywire-app "$@" < /dev/tty
+else
+    exec uvx create-pywire-app "$@"
+fi
