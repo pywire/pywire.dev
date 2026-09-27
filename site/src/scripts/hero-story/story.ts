@@ -678,7 +678,7 @@ export function mountStory(root: HTMLElement) {
   // counts the strip under its floating toolbar); keep the part below what's
   // shown clear, so the copy and the next button stay in view.
   let over = 0
-  const clear = () => over + (parseFloat(getComputedStyle(root).getPropertyValue('--dock')) || 0)
+  const clear = () => Math.max(over, parseFloat(getComputedStyle(root).getPropertyValue('--dock')) || 0)
   const fitOver = () => {
     const vv = visualViewport
     if (vv && Math.abs(vv.scale - 1) > 0.01) return // pinch zoom
@@ -689,6 +689,9 @@ export function mountStory(root: HTMLElement) {
     geom = ''
   }
   fitOver()
+  // ?viewport shows what this browser reports about its viewport.
+  if (new URLSearchParams(location.search).has('viewport'))
+    void import('./viewport-probe').then((m) => m.probe(root, canvas, next))
   visualViewport?.addEventListener('resize', fitOver)
   addEventListener('resize', fitOver)
 

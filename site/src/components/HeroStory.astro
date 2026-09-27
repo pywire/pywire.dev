@@ -213,9 +213,10 @@ const landPath = WORLD.flatMap((row, r) =>
     // Room kept clear at the bottom for a browser toolbar floating over the
     // page (iPhone Safari); see the @supports rule below.
     --dock: 0px;
-    // Any part of the stage below what the browser shows (set by the story).
+    // Any part of the stage below what the browser shows (measured by the
+    // story). When it's measured, it already covers the toolbar.
     --over: 0px;
-    --clear: calc(var(--dock) + var(--over));
+    --clear: max(var(--dock), var(--over));
 
     // accessible-astro's colors.css overrides the site's --color-primary-* tokens,
     // so the story's buttons take the wire ladder directly.
@@ -769,7 +770,7 @@ const landPath = WORLD.flatMap((row, r) =>
 
     &.low {
       top: auto;
-      bottom: calc(clamp(84px, 13svh, 150px) + var(--clear));
+      bottom: calc(clamp(90px, 13svh, 150px) + var(--clear));
     }
 
     h2 {
@@ -1007,7 +1008,7 @@ const landPath = WORLD.flatMap((row, r) =>
       gap: 12px;
 
       &.low {
-        bottom: calc(78px + var(--clear));
+        bottom: calc(90px + var(--clear));
       }
 
       h2 {
