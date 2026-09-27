@@ -3,37 +3,6 @@ import DefaultLayout from '@layouts/DefaultLayout.astro'
 import Feature from '@components/Feature.astro'
 import HeroStory from '@components/HeroStory.astro'
 import { Heading } from 'accessible-astro-components'
-import { createHighlighter } from 'shiki'
-import pywireGrammar from '../../public/grammars/pywire.tmLanguage.json'
-
-const highlighter = await createHighlighter({
-  themes: ['catppuccin-latte', 'catppuccin-mocha'],
-  langs: [
-    'python',
-    {
-      ...pywireGrammar,
-      name: 'pywire',
-    } as any,
-  ],
-})
-
-const pywireCode = `---
-count = wire(0)
----
-<p>Count: {count}</p>
-<button @click={count += 1}>
-    Add One
-</button>`
-
-const pywireHtmlDark = highlighter.codeToHtml(pywireCode, {
-  lang: 'pywire',
-  theme: 'catppuccin-mocha',
-})
-
-const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
-  lang: 'pywire',
-  theme: 'catppuccin-latte',
-})
 ---
 
 <DefaultLayout title="Home">
@@ -44,39 +13,23 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
       <Heading level="h2" id="why-title" class="features-h2"
         >The frontend ergonomics of Svelte. The simplicity of Python.</Heading
       >
-      <div class="after-row">
-        <div class="code-window">
-          <div class="code-window-chrome">
-            <span class="dot dot-red"></span>
-            <span class="dot dot-yellow"></span>
-            <span class="dot dot-green"></span>
-            <span class="filename">counter.wire</span>
-          </div>
-          <div class="code-window-body code-window-body--dark">
-            <Fragment set:html={pywireHtmlDark} />
-          </div>
-          <div class="code-window-body code-window-body--light">
-            <Fragment set:html={pywireHtmlLight} />
-          </div>
-        </div>
-        <div class="features-grid">
-          <Feature icon="lucide:zap" title="Fine-grained reactivity" highlight="count = wire(0)">
-            Wrap a value in <code>wire()</code> and any template that reads it updates automatically — no hooks, no virtual
-            DOM, no client routing.
-          </Feature>
-          <Feature icon="lucide:file-code" title="One file, many languages" highlight="counter.wire">
-            .wire single-file components: Python on top of HTML. First-class JS and CSS in the same file. JS component
-            islands coming soon.
-          </Feature>
-          <Feature
-            icon="lucide:zap-off"
-            title="Live by default"
-            highlight={['WebSocket', 'WebTransport', 'HTTP Long Polling']}
-          >
-            DOM diffs stream from the server over your transport of choice. No JSON APIs to invent, no client state to
-            sync.
-          </Feature>
-        </div>
+      <div class="features-grid">
+        <Feature icon="lucide:zap" title="Fine-grained reactivity" highlight="count = wire(0)">
+          Wrap a value in <code>wire()</code> and any template that reads it updates automatically — no hooks, no virtual
+          DOM, no client routing.
+        </Feature>
+        <Feature icon="lucide:file-code" title="One file, many languages" highlight="counter.wire">
+          .wire single-file components: Python on top of HTML. First-class JS and CSS in the same file. JS component
+          islands coming soon.
+        </Feature>
+        <Feature
+          icon="lucide:zap-off"
+          title="Live by default"
+          highlight={['WebSocket', 'WebTransport', 'HTTP Long Polling']}
+        >
+          DOM diffs stream from the server over your transport of choice. No JSON APIs to invent, no client state to
+          sync.
+        </Feature>
       </div>
     </div>
   </section>
@@ -86,105 +39,19 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
   // The section after the story rises over its last, pinned screen: the
   // camera keeps pulling back and the grid dims behind this copy.
   .story-after {
+    display: grid;
     position: relative;
+    align-content: center;
     z-index: 2;
     margin-top: -100svh;
     background: linear-gradient(
       to bottom,
       transparent,
-      color-mix(in oklch, var(--background-color) 80%, transparent) 14%,
-      var(--background-color) 45%
+      color-mix(in oklch, var(--background-color) 80%, transparent) 18%,
+      var(--background-color) 50%
     );
     padding: clamp(96px, 16svh, 180px) 0 var(--space-3xl);
     min-height: 100svh;
-  }
-
-  .after-row {
-    display: grid;
-    grid-template-columns: 1fr;
-    align-items: start;
-    gap: var(--space-l);
-    margin-top: var(--space-l);
-
-    @media (min-width: 1000px) {
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-    }
-  }
-
-  // macOS-chrome code window — adapts to Lab / Void per components/code-window.
-  // Lab: light surface, light syntax theme. Void: dark surface, dark syntax.
-  // Same recipe: 1px accent ring + soft accent-tint halo at matched intensity.
-  .code-window {
-    position: relative;
-    box-shadow:
-      0 0 0 1px color-mix(in oklch, var(--accent-color) 30%, transparent),
-      0 8px 24px color-mix(in oklch, var(--accent-color) 12%, transparent);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-l);
-    background: light-dark(var(--theme-light-surface-2), #1c1f2e);
-    overflow: hidden;
-    font-family: var(--font-mono);
-  }
-
-  .code-window-chrome {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    border-bottom: 1px solid var(--border-color);
-    background: light-dark(var(--theme-light-surface), #252839);
-    padding: 0.65rem 0.9rem;
-
-    .dot {
-      display: inline-block;
-      border-radius: 50%;
-      width: 11px;
-      height: 11px;
-    }
-
-    .dot-red {
-      background: #ff5f57;
-    }
-
-    .dot-yellow {
-      background: #febc2e;
-    }
-
-    .dot-green {
-      background: #28c840;
-    }
-
-    .filename {
-      margin-left: 0.5rem;
-      color: var(--text-decoration-color);
-      font-size: 0.78rem;
-      font-family: var(--font-mono);
-    }
-  }
-
-  .code-window-body {
-    padding: 0.9rem 1.1rem;
-    font-size: 0.85rem;
-    line-height: 1.6;
-
-    :global(pre) {
-      margin: 0;
-      background: transparent !important;
-      overflow-x: auto;
-    }
-  }
-
-  // Theme-paired bodies: only one renders depending on user's color scheme.
-  // Defeats Astro's view-transitions hydration timing on theme swap.
-  .code-window-body--dark {
-    display: none;
-  }
-
-  :root.darkmode .code-window-body--dark {
-    display: block;
-  }
-
-  :root.darkmode .code-window-body--light {
-    display: none;
   }
 
   :global(.features-h2) {
@@ -196,7 +63,12 @@ const pywireHtmlLight = highlighter.codeToHtml(pywireCode, {
 
   .features-grid {
     display: grid;
-    gap: var(--space-s);
+    grid-template-columns: 1fr;
+    gap: var(--space-m);
+
+    @media (min-width: 800px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
   }
 
   .eyebrow {

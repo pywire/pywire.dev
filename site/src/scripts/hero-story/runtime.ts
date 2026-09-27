@@ -12,6 +12,8 @@ export interface HeroState {
   h: number
   scale: number
   light: boolean
+  /** Last pointer press on the canvas: normalized x, y and scene time. */
+  zap: [number, number, number]
 }
 
 export interface HeroTheme {
@@ -46,7 +48,18 @@ interface RunnerOptions {
 export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: RunnerOptions) {
   const coarse = matchMedia('(pointer: coarse)').matches
   const reduce = reducedMotion()
-  const st: HeroState = { time: 0, dt: 0, mouse: [0.5, 0.5], scroll: 0, px: 1, w: 1, h: 1, scale: 1, light: isLight() }
+  const st: HeroState = {
+    time: 0,
+    dt: 0,
+    mouse: [0.5, 0.5],
+    scroll: 0,
+    px: 1,
+    w: 1,
+    h: 1,
+    scale: 1,
+    light: isLight(),
+    zap: [0.5, 0.5, -99],
+  }
   const target = [0.5, 0.5]
   const maxDpr = coarse ? 1.5 : 2
   let visible = false
@@ -147,6 +160,13 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
     target[1] = 1 - (e.clientY - r.top) / r.height
     lastMove = performance.now()
   }
+  const onDown = (e: PointerEvent) => {
+    onPtr(e)
+    // Snap the smoothed pointer so the discharge starts where the press was.
+    st.mouse[0] = target[0]
+    st.mouse[1] = target[1]
+    st.zap = [target[0], target[1], st.time]
+  }
   const onTheme = () => {
     st.light = isLight()
     if (!raf) still()
@@ -161,7 +181,7 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
   document.addEventListener('visibilitychange', onVis)
   reduce.addEventListener('change', onReduce)
   section.addEventListener('pointermove', onPtr, { passive: true })
-  section.addEventListener('pointerdown', onPtr, { passive: true })
+  section.addEventListener('pointerdown', onDown, { passive: true })
   addEventListener('scroll', onScroll, { passive: true })
   measure()
 
@@ -177,7 +197,7 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
       document.removeEventListener('visibilitychange', onVis)
       reduce.removeEventListener('change', onReduce)
       section.removeEventListener('pointermove', onPtr)
-      section.removeEventListener('pointerdown', onPtr)
+      section.removeEventListener('pointerdown', onDown)
       removeEventListener('scroll', onScroll)
     },
   }

@@ -2,13 +2,20 @@
 import { Link } from 'accessible-astro-components'
 import { Icon } from 'astro-icon/components'
 
+// The template half of counter.wire, as highlighted HTML (braces would read as
+// Astro expressions if written inline).
+const templateLines = [
+  '<span class="c-t">&lt;p&gt;</span>Count: {count}<span class="c-t">&lt;/p&gt;</span>',
+  '<span class="c-t">&lt;button</span> <span class="c-a">@click</span>={count += 1}<span class="c-t">&gt;</span>',
+]
+
 /**
- * HeroStory — "the camera story" from the design system's hero explorations.
+ * HeroStory — "the live conduit": a pinned scroll story over a WebGL circuit
+ * grid, grown from the design system's camera-story exploration.
  *
- * A pinned scroll story over a WebGL grid: the hero, then three steps (server,
- * wire, browser) while the camera zooms into the server node, follows the wire
- * and pulls back to the page. Once the page is up, a live counter runs the
- * pywire loop and its button sends a real round trip down the wire.
+ * The hero, then four beats (Python, conduit, patch, transport) while the
+ * camera frames a server card and a browser window. The browser's counter is
+ * live: a scripted demo clicks it three times, then it's the visitor's turn.
  * The section after it should overlap the last screen (see `.story-after`).
  */
 ---
@@ -17,24 +24,44 @@ import { Icon } from 'astro-icon/components'
   <div class="stage">
     <canvas aria-hidden="true"></canvas>
     <div class="world" data-world>
-      <div class="ov" data-ov="server" aria-hidden="true">
-        <div class="ov-server">
-          <span class="ov-label">server</span>
-          <code class="chip">count = wire(<b data-count="server">0</b>)</code>
+      <div class="srv" data-ov="server" aria-hidden="true">
+        <div class="win-bar">
+          <span class="srv-led"></span>
+          <span class="win-title">counter.wire</span>
+          <span class="win-tag">server</span>
+        </div>
+        <div class="srv-code">
+          <div class="c-f">---</div>
+          <div class="srv-state">count = <span class="c-k">wire</span>(<b data-count="server">0</b>)</div>
+          <div class="c-f">---</div>
+          {templateLines.map((line) => <div set:html={line} />)}
         </div>
       </div>
-      <div class="ov" data-ov="browser" aria-hidden="true">
-        <span class="ov-label ov-browser">browser</span>
-      </div>
-      <div class="ov" data-ov="diff" aria-hidden="true">
-        <code class="packet">Count: <b data-count="diff">0</b></code>
-      </div>
-      <div class="ov" data-ov="event" aria-hidden="true">
-        <code class="packet packet-event">@click</code>
-      </div>
-      <div class="ov-card" data-ov="card" role="group" aria-label="Live counter demo" inert>
-        <p class="card-count">Count: <span data-count="browser">0</span></p>
-        <button type="button" class="card-btn" data-add disabled>Add one</button>
+      <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">REST API</span></span>
+      <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">JSON</span></span>
+      <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">client store</span></span>
+      <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebSocket</span></span>
+      <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebTransport</span></span>
+      <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">HTTP long polling</span></span>
+      <span class="ov" data-ov="chip" aria-hidden="true"><code class="wchip" data-chip-text>@click</code></span>
+      <div class="brw" data-ov="browser" role="group" aria-label="Live counter demo" inert>
+        <div class="win-bar" aria-hidden="true">
+          <i></i><i></i><i></i>
+          <span class="brw-url">localhost:8000</span>
+          <span class="win-tag">browser</span>
+        </div>
+        <div class="brw-body">
+          <div class="brw-skel" aria-hidden="true"><i></i><i></i></div>
+          <p class="brw-count">Count: <span data-count="browser">0</span></p>
+          <div class="brw-act">
+            <button type="button" class="card-btn" data-add disabled>Add one</button>
+            <span class="ghost" data-ghost aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20"
+                ><path d="M4 3l7 17 2.5-7L21 10.5z" stroke-linejoin="round" stroke-width="1.5"></path></svg
+              >
+            </span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -63,21 +90,30 @@ import { Icon } from 'astro-icon/components'
       </div>
     </div>
     <div class="copy low step" data-step>
-      <p class="eyebrow">01 · Server</p>
-      <h2>State lives on the server</h2>
-      <p class="lead">Variables wrapped in <code>wire()</code> become reactive data sources that drive UI updates.</p>
-    </div>
-    <div class="copy low step" data-step>
-      <p class="eyebrow">02 · Wire</p>
-      <h2>Diffs over the wire</h2>
-      <p class="lead">When state changes, the server pushes a DOM diff over a WebSocket.</p>
-    </div>
-    <div class="copy low step" data-step>
-      <p class="eyebrow">03 · Browser</p>
-      <h2>The page patches in place</h2>
+      <p class="eyebrow">01 · Python</p>
+      <h2>Write Python, not a frontend</h2>
       <p class="lead">
-        Each diff lands on the element it changed. Click <strong>Add one</strong> to send an event up the wire.
+        A <code>.wire</code> file is Python on top of HTML. State lives on the server in <code>wire()</code> signals.
       </p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">02 · Conduit</p>
+      <h2>One conduit, no API layer</h2>
+      <p class="lead">
+        No REST endpoints, no JSON, no client store to keep in sync. The server renders HTML over one live connection.
+      </p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">03 · Patch</p>
+      <h2>Click. Patch. Done.</h2>
+      <p class="lead">
+        Events go up the wire and only the node that changed comes back. Your turn: press <strong>Add one</strong>.
+      </p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">04 · Transport</p>
+      <h2>Any wire you've got</h2>
+      <p class="lead">WebSocket, WebTransport or HTTP long polling. Same app, same code.</p>
     </div>
     <div class="progress" aria-hidden="true"><i data-progress></i></div>
   </div>
@@ -158,38 +194,71 @@ import { Icon } from 'astro-icon/components'
     top: 0;
     left: 0;
     opacity: 0;
-    will-change: transform, opacity;
   }
 
-  .ov-label {
-    color: var(--text-decoration-color);
-    font-weight: 500;
-    font-size: 8px;
-    font-family: var(--font-mono);
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    white-space: nowrap;
-  }
-
-  .ov-server {
-    display: grid;
+  // Shared window chrome for the server card and the browser.
+  .srv,
+  .brw {
+    display: flex;
     position: absolute;
-    top: 0;
-    left: 26px;
-    gap: 4px;
-    translate: 0 -50%;
+    flex-direction: column;
+    opacity: 0;
+    box-shadow: 0 12px 40px color-mix(in oklch, var(--background-color) 60%, transparent);
+    border: 1px solid color-mix(in oklch, var(--accent-color) 45%, var(--border-color));
+    border-radius: 10px;
+    background: light-dark(var(--theme-light-bg), #11141f);
+    overflow: hidden;
   }
 
-  .chip {
-    box-shadow: 0 0 calc(var(--hit, 0) * 14px) color-mix(in oklch, var(--accent-color) 45%, transparent);
-    border: 1px solid color-mix(in oklch, var(--accent-color) calc(35% + var(--hit, 0) * 50%), var(--border-color));
-    border-radius: 4px;
-    background: color-mix(in oklch, var(--background-color) 85%, transparent);
-    padding: 3px 7px;
-    color: var(--foreground-color);
+  .win-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+    border-bottom: 1px solid var(--border-color);
+    background: light-dark(var(--theme-light-surface-2), #191c2a);
+    padding: 7px 10px;
     font-size: 10px;
     font-family: var(--font-mono);
-    white-space: nowrap;
+
+    i {
+      border-radius: 50%;
+      background: var(--border-color);
+      width: 8px;
+      height: 8px;
+    }
+  }
+
+  .win-title {
+    color: var(--foreground-color);
+  }
+
+  .win-tag {
+    margin-left: auto;
+    color: var(--accent-color);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .srv-led {
+    box-shadow: 0 0 6px var(--accent-color);
+    border-radius: 50%;
+    background: var(--accent-color);
+    width: 7px;
+    height: 7px;
+  }
+
+  .srv-code {
+    padding: 10px 12px;
+    color: var(--foreground-color);
+    font-size: 11px;
+    line-height: 1.6;
+    font-family: var(--font-mono);
+
+    > div {
+      white-space: pre;
+    }
 
     b {
       color: var(--accent-color);
@@ -197,83 +266,194 @@ import { Icon } from 'astro-icon/components'
     }
   }
 
-  [data-ov='server'] {
-    --hit: 0;
+  .srv-state {
+    transition: background-color 0.4s;
+    margin: 0 -12px;
+    padding: 0 12px;
   }
 
-  // Portrait: the node sits centred at the top, so the chip goes above it.
-  :global([data-orient='portrait']) .ov-server {
-    left: 0;
-    justify-items: center;
-    translate: -50% calc(-100% - 22px);
+  .srv:global(.hit) .srv-state {
+    animation: line-hit 0.5s ease-out;
   }
 
-  .ov-browser {
-    position: absolute;
-    bottom: 6px;
-    left: 0;
-  }
-
-  .packet {
-    position: absolute;
-    bottom: 10px;
-    left: 0;
-    translate: -50% 0;
-    border: 1px solid color-mix(in oklch, var(--accent-color) 60%, transparent);
-    border-radius: 4px;
-    background: color-mix(in oklch, var(--background-color) 88%, transparent);
-    padding: 2px 6px;
-    color: var(--accent-color);
-    font-size: 10px;
-    font-family: var(--font-mono);
-    white-space: nowrap;
-
-    b {
-      font-weight: 600;
+  @keyframes line-hit {
+    from {
+      background: color-mix(in oklch, var(--accent-color) 28%, transparent);
     }
   }
 
-  .packet-event {
-    color: var(--foreground-color);
+  .c-f {
+    color: var(--text-decoration-color);
   }
 
-  .ov-card {
-    --patch: 0;
+  .c-k {
+    color: light-dark(#8839ef, #cba6f7);
+  }
 
+  .c-t {
+    color: light-dark(#1e66f5, #89b4fa);
+  }
+
+  .c-a {
+    color: light-dark(#df8e1d, #f9e2af);
+  }
+
+  .brw {
+    pointer-events: auto;
+  }
+
+  .brw-url {
+    flex: 1;
+    margin-left: 6px;
+    border-radius: 999px;
+    background: var(--background-color);
+    padding: 2px 10px;
+    max-width: 55%;
+    overflow: hidden;
+    color: var(--text-decoration-color);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .brw-body {
     display: grid;
-    position: absolute;
-    place-content: center;
+    position: relative;
+    flex: 1;
+    align-content: center;
     justify-items: center;
     gap: 12px;
-    opacity: 0;
-    box-shadow: 0 0 calc(var(--patch) * 28px) color-mix(in oklch, var(--accent-color) 40%, transparent);
-    border: 1px solid color-mix(in oklch, var(--accent-color) calc(40% + var(--patch) * 60%), transparent);
-    border-radius: 4px;
-    background: color-mix(in oklch, var(--background-color) 70%, transparent);
-    pointer-events: auto;
-    text-align: center;
+    padding: 12px;
   }
 
-  .card-count {
+  // Faint page skeleton so the window reads as a page, not a dialog.
+  .brw-skel {
+    display: grid;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    gap: 6px;
+
+    i {
+      border-radius: 3px;
+      background: var(--border-color);
+      height: 6px;
+    }
+
+    i:nth-child(2) {
+      width: 60%;
+    }
+  }
+
+  .brw-count {
     margin: 0;
     color: var(--foreground-color);
     font-weight: 600;
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
 
     span {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 0 3px;
       color: var(--accent-color);
+    }
+
+    // Fine-grained: only the text node that changed lights up.
+    span:global(.patched) {
+      animation: patched 0.6s ease-out;
     }
   }
 
+  @keyframes patched {
+    from {
+      box-shadow: 0 0 0 1.5px var(--accent-color);
+      background: color-mix(in oklch, var(--accent-color) 25%, transparent);
+    }
+  }
+
+  .brw-act {
+    position: relative;
+  }
+
+  .ghost {
+    position: absolute;
+    top: 60%;
+    left: 70%;
+    opacity: 0;
+    transition: transform 0.12s;
+    pointer-events: none;
+
+    svg {
+      fill: #fff;
+      stroke: #0a0c14;
+    }
+
+    &:global(.down) {
+      transform: scale(0.82);
+    }
+  }
+
+  .lbl {
+    display: block;
+    translate: -50% -50%;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--background-color);
+    padding: 1px 6px;
+    color: var(--text-decoration-color);
+    font-size: 9px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .lbl-stack {
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in oklch, var(--text-decoration-color) 70%, transparent);
+  }
+
+  .lbl-tx {
+    translate: 0 calc(-100% - 4px);
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
+
+  [data-ov='tx']:global(.on) .lbl-tx {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+  }
+
+  :global([data-orient='portrait']) .lbl-tx {
+    translate: 6px -50%;
+  }
+
+  .wchip {
+    display: block;
+    translate: -50% calc(-100% - 8px);
+    border: 1px solid color-mix(in oklch, var(--accent-color) 60%, transparent);
+    border-radius: 4px;
+    background: var(--background-color);
+    padding: 2px 7px;
+    color: var(--accent-color);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  :global([data-orient='portrait']) .wchip {
+    translate: 10px -50%;
+  }
+
   .card-btn {
+    position: relative;
     transition: background-color var(--animation-speed-fast);
     cursor: pointer;
     border: 0;
     border-radius: 8px;
     background: var(--btn-bg);
-    padding: 0.5rem 0.9rem;
+    padding: 0.5rem 0.95rem;
     color: var(--btn-fg);
     font: 600 0.9rem var(--font-body);
 
@@ -281,13 +461,29 @@ import { Icon } from 'astro-icon/components'
       background: var(--btn-bg-hover);
     }
 
-    &:active {
+    &:active,
+    &:global(.pressed) {
       transform: translateY(1px);
     }
 
     &:focus-visible {
       outline: 2px solid var(--accent-color);
       outline-offset: 3px;
+    }
+
+    // After the scripted demo, invite the visitor to take over.
+    &:global(.your-turn) {
+      animation: your-turn 1.6s ease-out infinite;
+    }
+  }
+
+  @keyframes your-turn {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent-color) 55%, transparent);
+    }
+
+    to {
+      box-shadow: 0 0 0 12px transparent;
     }
   }
 
@@ -415,17 +611,21 @@ import { Icon } from 'astro-icon/components'
     background: color-mix(in oklch, var(--background-color) 60%, transparent) !important;
   }
 
+  // Outgoing copy clears quickly; incoming copy waits for it so two steps never overlap.
   .step {
     transform: translateY(16px);
     opacity: 0;
     transition:
-      opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      opacity 0.18s ease-in,
+      transform 0.18s ease-in;
     pointer-events: none;
 
     &:global(.on) {
       transform: none;
       opacity: 1;
+      transition:
+        opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.16s,
+        transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.16s;
       pointer-events: auto;
     }
   }
@@ -448,6 +648,10 @@ import { Icon } from 'astro-icon/components'
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .card-btn:global(.your-turn) {
+      animation: none;
+    }
+
     .step {
       transform: none;
       transition: none;
