@@ -1,19 +1,15 @@
 // Shared runtime for the hero canvas: DPR cap, adaptive render scale, pause when
-// offscreen or in a background tab, a still frame for reduced motion, and a
-// smoothed pointer that drifts on its own while idle.
+// offscreen or in a background tab, and a still frame for reduced motion.
 
 export interface HeroState {
   time: number
   dt: number
-  mouse: [number, number]
   scroll: number
   px: number
   w: number
   h: number
   scale: number
   light: boolean
-  /** Last pointer press on the canvas: normalized x, y and scene time. */
-  zap: [number, number, number]
 }
 
 export interface HeroTheme {
@@ -51,21 +47,17 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
   const st: HeroState = {
     time: 0,
     dt: 0,
-    mouse: [0.5, 0.5],
     scroll: 0,
     px: 1,
     w: 1,
     h: 1,
     scale: 1,
     light: isLight(),
-    zap: [0.5, 0.5, -99],
   }
-  const target = [0.5, 0.5]
   const maxDpr = coarse ? 1.5 : 2
   let visible = false
   let raf = 0
   let last = 0
-  let lastMove = -1e9
   let accT = 0
   let frames = 0
   let lastAdapt = 0
@@ -95,14 +87,6 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
     last = now
     st.dt = dt
     st.time += dt
-    const idle = now - lastMove > 2500
-    if (idle) {
-      target[0] = 0.5 + 0.3 * Math.sin(st.time * 0.23)
-      target[1] = 0.5 + 0.22 * Math.sin(st.time * 0.17 + 1.3)
-    }
-    const k = 1 - Math.exp(-dt * (idle ? 1.2 : 5))
-    st.mouse[0] += (target[0] - st.mouse[0]) * k
-    st.mouse[1] += (target[1] - st.mouse[1]) * k
     st.scroll = scrollP()
     o.render(st)
     // Adaptive resolution: drop render scale when frames run long, recover slowly.
@@ -154,19 +138,6 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
     start()
     still()
   }
-  const onPtr = (e: PointerEvent) => {
-    const r = canvas.getBoundingClientRect()
-    target[0] = (e.clientX - r.left) / r.width
-    target[1] = 1 - (e.clientY - r.top) / r.height
-    lastMove = performance.now()
-  }
-  const onDown = (e: PointerEvent) => {
-    onPtr(e)
-    // Snap the smoothed pointer so the discharge starts where the press was.
-    st.mouse[0] = target[0]
-    st.mouse[1] = target[1]
-    st.zap = [target[0], target[1], st.time]
-  }
   const onTheme = () => {
     st.light = isLight()
     if (!raf) still()
@@ -180,8 +151,6 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
   mo.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
   document.addEventListener('visibilitychange', onVis)
   reduce.addEventListener('change', onReduce)
-  section.addEventListener('pointermove', onPtr, { passive: true })
-  section.addEventListener('pointerdown', onDown, { passive: true })
   addEventListener('scroll', onScroll, { passive: true })
   measure()
 
@@ -196,14 +165,12 @@ export function runHero(section: HTMLElement, canvas: HTMLCanvasElement, o: Runn
       mo.disconnect()
       document.removeEventListener('visibilitychange', onVis)
       reduce.removeEventListener('change', onReduce)
-      section.removeEventListener('pointermove', onPtr)
-      section.removeEventListener('pointerdown', onDown)
       removeEventListener('scroll', onScroll)
     },
   }
 }
 
-const COMMON_UNIFORMS = ['u_res', 'u_time', 'u_mouse', 'u_light', 'u_px', 'u_bg', 'u_ink', 'u_acc'] as const
+const COMMON_UNIFORMS = ['u_res', 'u_time', 'u_light', 'u_px', 'u_bg', 'u_ink', 'u_acc'] as const
 
 /**
  * Compile a full-screen fragment shader onto `canvas` and run it. `frame` is
@@ -265,7 +232,6 @@ export function createShaderHero(
       const T = themes[st.light ? 'light' : 'dark']
       set('u_res', canvas.width, canvas.height)
       set('u_time', st.time)
-      set('u_mouse', st.mouse[0], st.mouse[1])
       set('u_light', st.light ? 1 : 0)
       set('u_px', canvas.width / st.w)
       set('u_bg', ...T.bg)

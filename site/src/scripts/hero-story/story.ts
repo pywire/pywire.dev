@@ -31,6 +31,14 @@ const ramp = (s: number, a: number, d: number) => ss((s - a) / d)
 const TAIL = 1 / 5.5 // share of the scroll spent pulling the camera out
 const BEATS = [0.14, 0.36, 0.58, 0.8]
 const stepOf = (s: number) => BEATS.filter((b) => s >= b).length
+// Where the next button lands for each step (story progress), and what it says.
+const NEXT: [number, string][] = [
+  [0.27, 'Write Python, not a frontend'],
+  [0.555, 'One conduit, no API layer'],
+  [0.67, 'Click. Patch. Done.'],
+  [0.9, "Any wire you've got"],
+  [-1, 'Why pywire'],
+]
 const ARC = 0.07 // seconds for an arc to cross the wire
 const LANES = [-1, 0, 1]
 
@@ -138,8 +146,8 @@ const UNIFORMS = [
   'u_cam',
   'u_out',
   'u_amb',
-  'u_probe',
-  'u_zap',
+  'u_flow',
+  'u_energy',
   'u_srv',
   'u_brw',
   'u_ta',
@@ -180,6 +188,8 @@ export function mountStory(root: HTMLElement) {
   const browserCount = q('[data-count="browser"]')
   const button = q<HTMLButtonElement>('[data-add]')
   const reduce = reducedMotion()
+  const next = q<HTMLButtonElement>('[data-next]')
+  const nextLabel = q('[data-next-label]')
 
   let count = 0
   let geom = ''
@@ -201,6 +211,10 @@ export function mountStory(root: HTMLElement) {
   let demo = -1 // seconds into the demo, -1 = not started
   let demoDone = false
   let clicks = 0
+  let flow = 0
+  let energy = 0
+  let lastScroll = 0
+  let scrollRange = 1
 
   const setText = (n: HTMLElement, v: string) => {
     if (n.textContent !== v) n.textContent = v
@@ -250,6 +264,9 @@ export function mountStory(root: HTMLElement) {
       cur = i
       steps.forEach((node, j) => node.classList.toggle('on', j === i))
       root.dataset.step = String(i)
+      if (i >= 0) setText(nextLabel, NEXT[i][1])
+      next.classList.toggle('gone', i < 0)
+      next.disabled = i < 0
     }
     if (bar) bar.style.transform = `scaleX(${s})`
   }
@@ -271,6 +288,7 @@ export function mountStory(root: HTMLElement) {
       size(srvEl, L.srv, h)
       size(brwEl, L.brw, h)
       root.dataset.orient = L.vert ? 'portrait' : 'landscape'
+      scrollRange = Math.max(1, root.offsetHeight - innerHeight)
       const mid = pointAt(main, len / 2)
       place(chip, mid[0], mid[1], h)
       stackEls.forEach((el, k) => {
@@ -357,11 +375,15 @@ export function mountStory(root: HTMLElement) {
         : [0, 0, 0, 0]
 
     set('u_cam', cx, cy, z)
-    // The press position is normalized to the stage; the discharge wants world space.
-    set('u_zap', (st.zap[0] - 0.5) * (w / z) + cx, (st.zap[1] - 0.5) * (h / z) + cy, st.zap[2])
+    // Scrolling energizes the board: its clock runs up to 3.5x faster and it glows.
+    const sv = dt > 0 ? (Math.abs(st.scroll - lastScroll) * scrollRange) / dt : 0
+    lastScroll = st.scroll
+    energy += (Math.min(1, sv / 1400) - energy) * (1 - Math.exp(-dt * (sv > 0 ? 6 : 1.5)))
+    flow += dt * (1 + 2.5 * energy)
+    set('u_flow', flow)
+    set('u_energy', energy)
     set('u_out', out * 0.8)
     set('u_amb', 1 - 0.6 * srvOn)
-    set('u_probe', 1 - 0.45 * ramp(s, 0.1, 0.1))
     set('u_srv', ...L.srv)
     set('u_brw', ...L.brw)
     set('u_ta', ...L.ta)
@@ -423,8 +445,19 @@ export function mountStory(root: HTMLElement) {
   }
   button.addEventListener('click', onAdd)
 
+  const onNext = () => {
+    const [target] = NEXT[Math.max(0, cur)]
+    const r = root.getBoundingClientRect()
+    const range = r.height - innerHeight
+    const top = scrollY + r.top
+    const y = top + (target < 0 ? 1 : target * (1 - TAIL)) * range
+    scrollTo({ top: y, behavior: reduce.matches ? 'auto' : 'smooth' })
+  }
+  next.addEventListener('click', onNext)
+
   return () => {
     button.removeEventListener('click', onAdd)
+    next.removeEventListener('click', onNext)
     removeEventListener('scroll', onScroll)
     hero?.destroy()
   }

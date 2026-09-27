@@ -2,12 +2,37 @@
 import { Link } from 'accessible-astro-components'
 import { Icon } from 'astro-icon/components'
 
-// The template half of counter.wire, as highlighted HTML (braces would read as
-// Astro expressions if written inline).
-const templateLines = [
-  '<span class="c-t">&lt;p&gt;</span>Count: {count}<span class="c-t">&lt;/p&gt;</span>',
-  '<span class="c-t">&lt;button</span> <span class="c-a">@click</span>={count += 1}<span class="c-t">&gt;</span>',
-]
+import { createHighlighter } from 'shiki'
+import pywireGrammar from '../../public/grammars/pywire.tmLanguage.json'
+
+// counter.wire for the server card, highlighted with the real .wire grammar in
+// both catppuccin themes. The state line and its value are tagged so the story
+// can flash the line and update the number live.
+const highlighter = await createHighlighter({
+  themes: ['catppuccin-latte', 'catppuccin-mocha'],
+  langs: ['python', { ...pywireGrammar, name: 'pywire' } as any],
+})
+const counterCode = `---
+count = wire(0)
+---
+<p>Count: {count}</p>
+<button @click={count += 1}>`
+const counterHtml = highlighter.codeToHtml(counterCode, {
+  lang: 'pywire',
+  themes: { light: 'catppuccin-latte', dark: 'catppuccin-mocha' },
+  defaultColor: 'light',
+  transformers: [
+    {
+      line(node, line) {
+        if (line === 2) this.addClassToHast(node, 'srv-state')
+      },
+      span(node, line) {
+        const child = node.children[0]
+        if (line === 2 && child?.type === 'text' && child.value === '0') node.properties['data-count'] = 'server'
+      },
+    },
+  ],
+})
 
 /**
  * HeroStory — "the live conduit": a pinned scroll story over a WebGL circuit
@@ -30,12 +55,7 @@ const templateLines = [
           <span class="win-title">counter.wire</span>
           <span class="win-tag">server</span>
         </div>
-        <div class="srv-code">
-          <div class="c-f">---</div>
-          <div class="srv-state">count = <span class="c-k">wire</span>(<b data-count="server">0</b>)</div>
-          <div class="c-f">---</div>
-          {templateLines.map((line) => <div set:html={line} />)}
-        </div>
+        <div class="srv-code" set:html={counterHtml} />
       </div>
       <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">REST API</span></span>
       <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">JSON</span></span>
@@ -115,6 +135,11 @@ const templateLines = [
       <h2>Any wire you've got</h2>
       <p class="lead">WebSocket, WebTransport or HTTP long polling. Same app, same code.</p>
     </div>
+    <button type="button" class="next" data-next>
+      <span class="next-k">Next</span>
+      <span class="next-label" data-next-label>Write Python, not a frontend</span>
+      <Icon aria-hidden="true" name="lucide:chevron-down" size="1.1rem" class="next-icon" />
+    </button>
     <div class="progress" aria-hidden="true"><i data-progress></i></div>
   </div>
 </section>
@@ -251,28 +276,38 @@ const templateLines = [
 
   .srv-code {
     padding: 10px 12px;
-    color: var(--foreground-color);
     font-size: 11px;
     line-height: 1.6;
     font-family: var(--font-mono);
 
-    > div {
-      white-space: pre;
+    :global(pre) {
+      margin: 0;
+      background: transparent !important;
+      overflow: visible;
     }
 
-    b {
-      color: var(--accent-color);
-      font-weight: 600;
+    :global(code) {
+      font: inherit;
+    }
+
+    :global([data-count]) {
+      font-weight: 700;
     }
   }
 
-  .srv-state {
-    transition: background-color 0.4s;
+  // Shiki's dual themes: light colours inline, dark ones in --shiki-dark.
+  :global(:root.darkmode) .srv-code :global(.shiki span) {
+    color: var(--shiki-dark) !important;
+  }
+
+  .srv-code :global(.srv-state) {
+    display: inline-block;
     margin: 0 -12px;
     padding: 0 12px;
+    width: calc(100% + 24px);
   }
 
-  .srv:global(.hit) .srv-state {
+  .srv:global(.hit) .srv-code :global(.srv-state) {
     animation: line-hit 0.5s ease-out;
   }
 
@@ -280,22 +315,6 @@ const templateLines = [
     from {
       background: color-mix(in oklch, var(--accent-color) 28%, transparent);
     }
-  }
-
-  .c-f {
-    color: var(--text-decoration-color);
-  }
-
-  .c-k {
-    color: light-dark(#8839ef, #cba6f7);
-  }
-
-  .c-t {
-    color: light-dark(#1e66f5, #89b4fa);
-  }
-
-  .c-a {
-    color: light-dark(#df8e1d, #f9e2af);
   }
 
   .brw {
@@ -514,7 +533,7 @@ const templateLines = [
 
     &.low {
       top: auto;
-      bottom: clamp(64px, 12svh, 140px);
+      bottom: clamp(84px, 13svh, 150px);
     }
 
     h2 {
@@ -630,6 +649,78 @@ const templateLines = [
     }
   }
 
+  // Tells you there is more below and what it is; clicking jumps to that beat.
+  .next {
+    display: inline-flex;
+    position: absolute;
+    // On the hero the stage still sits under the sticky nav, so its bottom
+    // edge is below the fold; lift the button until the story is pinned.
+    bottom: 76px;
+    left: 50%;
+    align-items: center;
+    gap: 8px;
+    translate: -50% 0;
+    backdrop-filter: blur(6px);
+    transition:
+      opacity 0.3s,
+      border-color var(--animation-speed-fast),
+      background-color var(--animation-speed-fast);
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--background-color) 80%, transparent);
+    padding: 7px 12px 7px 14px;
+    max-width: calc(100% - 2 * var(--gut));
+    color: var(--foreground-color);
+    font: 500 0.85rem var(--font-body);
+    white-space: nowrap;
+
+    &:hover {
+      border-color: var(--accent-color);
+      background: var(--accent-bg-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 3px;
+    }
+
+    &:global(.gone) {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  :global([data-story]:not([data-step='0'])) .next {
+    bottom: 18px;
+  }
+
+  .next-k {
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .next-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  :global(.next-icon) {
+    flex: none;
+    animation: nudge 1.8s ease-in-out infinite;
+    color: var(--accent-color);
+  }
+
+  @keyframes nudge {
+    50% {
+      transform: translateY(3px);
+    }
+  }
+
   .progress {
     position: absolute;
     right: 0;
@@ -648,7 +739,8 @@ const templateLines = [
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .card-btn:global(.your-turn) {
+    .card-btn:global(.your-turn),
+    :global(.next-icon) {
       animation: none;
     }
 
