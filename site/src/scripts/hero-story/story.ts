@@ -359,7 +359,6 @@ export function mountStory(root: HTMLElement) {
     // Stateless: the event carries its signed state along to the nearest edge.
     setText(chipText, edge > 0.5 ? '@click + state' : '@click')
     sentTo = Math.max(0, near)
-    if (edge > 0.5) flash(youMark, 'hit')
     chipT = 0
   }
   const onServer = () => {
@@ -375,7 +374,8 @@ export function mountStory(root: HTMLElement) {
     flash(browserCount, 'patched')
     setText(chipText, `patch "${count}"`)
     chipT = 0
-    brwHit = 1
+    // Quieter at the edge: the count patches without the window lighting up.
+    if (edge < 0.5) brwHit = 1
   }
 
   // The edge beat on the map (in map units): you, the edge nearest you, and
@@ -577,9 +577,8 @@ export function mountStory(root: HTMLElement) {
           legT -= GLIDE + STAY
           leg = (leg + 1) % cities.length
         }
-        // Two clicks in each city: on arrival, then once more.
-        const clicked = (at: number) => legT - dt < at && legT >= at
-        if (live && (clicked(GLIDE) || clicked(GLIDE + 0.8))) {
+        // One click in each city, on arrival.
+        if (live && legT - dt < GLIDE && legT >= GLIDE) {
           flash(button, 'pressed')
           edgeClick = 0
           queued = Math.min(queued + 1, 4)
@@ -674,24 +673,16 @@ export function mountStory(root: HTMLElement) {
     updateSteps(sa, out)
   }
 
-  // The stage is 100svh, but some browsers show less than that (iPhone Safari
-  // counts the strip under its floating toolbar); keep the part below what's
-  // shown clear, so the copy and the next button stay in view.
-  let over = 0
-  const clear = () => Math.max(over, parseFloat(getComputedStyle(root).getPropertyValue('--dock')) || 0)
-  const fitOver = () => {
-    const vv = visualViewport
-    if (vv && Math.abs(vv.scale - 1) > 0.01) return // pinch zoom
-    const v = Math.max(0, Math.round(canvas.clientHeight - (vv?.height ?? innerHeight)))
-    if (v === over) return
-    over = v
-    root.style.setProperty('--over', `${v}px`)
-    geom = ''
-  }
-  fitOver()
+  // The stage is 100svh, but iPhone Safari's svh runs under its floating
+  // toolbar; the CSS keeps 100svh - 100dvh clear (--over), and the layout
+  // measures the same thing to fit the diagram above it.
+  const dvh = q('[data-dvh]')
+  const clear = () => Math.max(0, canvas.clientHeight - dvh.offsetHeight)
+  // The visible height changes with the toolbar: refit.
+  const fitOver = () => (geom = '')
   // ?viewport shows what this browser reports about its viewport.
   if (new URLSearchParams(location.search).has('viewport'))
-    void import('./viewport-probe').then((m) => m.probe(root, canvas, next))
+    void import('./viewport-probe').then((m) => m.probe(canvas, next))
   visualViewport?.addEventListener('resize', fitOver)
   addEventListener('resize', fitOver)
 

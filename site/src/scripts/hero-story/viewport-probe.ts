@@ -1,7 +1,7 @@
 // A readout of what the browser reports about its viewport, for tuning the
 // story on devices we can't run here (iPhone Safari's floating toolbar).
 // Open the page with ?viewport and screenshot it.
-export function probe(root: HTMLElement, stage: HTMLElement, next: HTMLElement) {
+export function probe(stage: HTMLElement, next: HTMLElement) {
   const box = document.createElement('pre')
   Object.assign(box.style, {
     position: 'fixed',
@@ -19,7 +19,7 @@ export function probe(root: HTMLElement, stage: HTMLElement, next: HTMLElement) 
   // Elements sized in each viewport unit, and one padded by the safe area.
   const unit = (css: string) => {
     const el = document.createElement('div')
-    el.style.cssText = `position:fixed;left:0;top:0;width:0;visibility:hidden;${css}`
+    el.style.cssText = `position:absolute;left:0;top:0;width:0;visibility:hidden;${css}`
     document.body.append(el)
     return el
   }
@@ -31,7 +31,6 @@ export function probe(root: HTMLElement, stage: HTMLElement, next: HTMLElement) 
   const r = (n: number) => Math.round(n)
   const show = () => {
     const vv = visualViewport
-    const cs = getComputedStyle(root)
     box.textContent = [
       `screen    ${screen.width}x${screen.height}`,
       `inner     ${innerWidth}x${innerHeight}`,
@@ -40,7 +39,7 @@ export function probe(root: HTMLElement, stage: HTMLElement, next: HTMLElement) 
       `svh/dvh/lvh ${svh.offsetHeight}/${dvh.offsetHeight}/${lvh.offsetHeight}`,
       `safe-bot  ${safe.offsetHeight}`,
       `stage     top${r(stage.getBoundingClientRect().top)} h${stage.clientHeight}`,
-      `dock/over ${cs.getPropertyValue('--dock')}/${cs.getPropertyValue('--over')}`,
+      `clear     ${Math.max(0, stage.clientHeight - dvh.offsetHeight)}`,
       `next      bottom${r(next.getBoundingClientRect().bottom)}`,
       `scrollY   ${r(scrollY)}`,
     ].join('\n')

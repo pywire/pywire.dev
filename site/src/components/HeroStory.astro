@@ -55,6 +55,7 @@ const landPath = WORLD.flatMap((row, r) =>
 <section class="story" data-story aria-labelledby="hero-title">
   <div class="stage">
     <canvas aria-hidden="true"></canvas>
+    <i class="dvh" data-dvh aria-hidden="true"></i>
     <div class="world" data-world>
       <div class="core" data-ov="core" aria-hidden="true">
         <PywireMark class="core-mark" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" />
@@ -94,7 +95,6 @@ const landPath = WORLD.flatMap((row, r) =>
         <circle class="map-packet" data-packet r="1.3"></circle>
         <g data-you>
           <g class="you">
-            <circle class="you-ping" r="3"></circle>
             <circle class="you-ring" r="3"></circle>
             <circle class="you-core" r="1.4"></circle>
             <text y="8">you</text>
@@ -210,13 +210,9 @@ const landPath = WORLD.flatMap((row, r) =>
 <style lang="scss">
   .story {
     --gut: clamp(1.125rem, 4vw, 3.5rem);
-    // Room kept clear at the bottom for a browser toolbar floating over the
-    // page (iPhone Safari); see the @supports rule below.
-    --dock: 0px;
-    // Any part of the stage below what the browser shows (measured by the
-    // story). When it's measured, it already covers the toolbar.
-    --over: 0px;
-    --clear: max(var(--dock), var(--over));
+    // The part of the stage below what the browser shows: iPhone Safari's
+    // 100svh runs under its floating toolbar, while 100dvh stops above it.
+    --clear: max(0px, 100svh - 100dvh);
 
     // accessible-astro's colors.css overrides the site's --color-primary-* tokens,
     // so the story's buttons take the wire ladder directly.
@@ -235,6 +231,15 @@ const landPath = WORLD.flatMap((row, r) =>
     top: 0;
     height: 100svh;
     overflow: hidden;
+  }
+
+  // Measures 100dvh for the layout (see --clear).
+  .dvh {
+    position: absolute;
+    top: 0;
+    visibility: hidden;
+    width: 0;
+    height: 100dvh;
   }
 
   canvas {
@@ -591,11 +596,11 @@ const landPath = WORLD.flatMap((row, r) =>
   @keyframes beacon-ping {
     from {
       transform: scale(1);
-      opacity: 1;
+      opacity: 0.5;
     }
 
     to {
-      transform: scale(2.6);
+      transform: scale(1.8);
       opacity: 0;
     }
   }
@@ -629,20 +634,6 @@ const landPath = WORLD.flatMap((row, r) =>
   }
 
   .you {
-    // A click leaving you: the same ping as an edge taking it.
-    .you-ping {
-      transform-box: fill-box;
-      transform-origin: center;
-      opacity: 0;
-      fill: none;
-      stroke: var(--foreground-color);
-      stroke-width: 0.6;
-    }
-
-    &:global(.hit) .you-ping {
-      animation: beacon-ping 0.5s ease-out;
-    }
-
     .you-ring {
       fill: none;
       stroke: var(--foreground-color);
@@ -731,6 +722,11 @@ const landPath = WORLD.flatMap((row, r) =>
     &:global(.your-turn) {
       animation: your-turn 1.6s ease-out infinite;
     }
+  }
+
+  // The edge beat clicks on its own; keep it calm.
+  :global([data-story][data-step='5']) .card-btn:global(.your-turn) {
+    animation: none;
   }
 
   @keyframes your-turn {
@@ -987,16 +983,6 @@ const landPath = WORLD.flatMap((row, r) =>
       transform-origin: left;
       inset: 0;
       background: var(--accent-color);
-    }
-  }
-
-  // iPhone Safari floats its toolbar over the bottom of the page, and the
-  // page's viewport runs underneath it.
-  @supports (-webkit-touch-callout: none) {
-    @media (max-width: 599px) {
-      .story {
-        --dock: 72px;
-      }
     }
   }
 
