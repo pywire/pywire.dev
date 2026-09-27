@@ -5,12 +5,14 @@
 //   3 patch     a click crosses the wire, the server bumps state, and only the
 //               changed text node patches; three scripted clicks, then yours
 //   4 transport the conduit splits into WebSocket, WebTransport, long polling
-//   5 edge      stateless: edge nodes pop up everywhere, the server card goes,
-//               and every visitor, moving around, wires to the nearest node
+//   5 edge      stateless: the server and its wire go, a world map of edge
+//               locations comes up, and you travel around it; every click
+//               lands on whichever edge is nearest
 // The camera frames each beat; HTML cards ride the same camera transform.
 import { createShaderHero, reducedMotion, type HeroState } from './runtime'
 import { storyFrag } from './shader'
 import { snapScroll } from './snap'
+import { EDGES, MAP_H, MAP_W, TRIP, project } from './world'
 
 type V2 = [number, number]
 /** Center x, y (world, origin bottom-left) and half width, half height. */
@@ -20,12 +22,13 @@ interface Layout {
   brw: Rect
   /** The hero's chip: center x, y and half size. */
   chip: [number, number, number]
-  /** The edge node in step 5 (center x, y, half size) and its wire port. */
-  edge: [number, number, number]
-  edgePort: V2
-  /** More edge nodes (center x, y, half size) and visitors' paths between them. */
-  nodes: [number, number, number][]
-  users: [V2, V2][]
+  /** The edge beat's world map, and where the browser moves for it. */
+  map: Rect
+  brwEdge: V2
+  /** Base zoom: the diagram scaled to fit the screen, and the screen band
+   * (top-down) it has to fit in, above the step copy. */
+  z0: number
+  band: V2
   ta: V2
   tb: V2
   vert: boolean
@@ -56,64 +59,102 @@ const NEXT: [number, string][] = [
   [0.93, 'Stateless, at the edge'],
   [-1, 'Why pywire'],
 ]
-const DROP = 64 // portrait: how far the browser moves down for the edge node
 const ARC = 0.07 // seconds for an arc to cross the wire
+const HOP = 0.16 // seconds for a packet to cross to an edge on the map
+const GLIDE = 1.3 // seconds travelling between two cities
+const STAY = 1.5 // seconds in each city
+const MAP_AR = MAP_W / MAP_H
 const LANES = [-1, 0, 1]
 
-function layout(w: number, h: number): Layout {
+/** Where the page's copy sits (screen px, top-down), measured from the DOM. */
+interface Fit {
+  /** Top of the tallest step copy. */
+  copyTop: number
+  /** Bottom of the hero copy, and top of the next button on the hero. */
+  heroBottom: number
+  nextTop: number
+}
+
+function layout(w: number, h: number, fit: Fit): Layout {
   const portrait = w < 800 || w / h < 1.05
   // Positions are picked top-down, then flipped into world space.
   const y = (top: number) => h - top
   if (portrait) {
-    // Keep the diagram in the top half; the step copy owns the bottom.
-    const sw = Math.min(136, w * 0.4)
-    const srv: Rect = [sn(w * 0.5), sn(y(h * 0.17)), sw, 64]
-    const bw = Math.min(260, w * 0.43)
-    const bh = Math.min(110, h * 0.1)
-    const brw: Rect = [sn(w * 0.5), sn(y(h * 0.45)), bw, bh]
-    const ch = Math.round(Math.min(52, w * 0.13))
-    // The edge node takes the browser's spot; the browser drops by DROP.
-    const et = brw[1] + brw[3] + 20
-    const at = (x: number, t: number): V2 => [w * x, y(h * t)]
+    // The server card above the browser, fitted into the band above the step
+    // copy: the base camera (w/2, h/2, z0) scales the pair up on tablets and
+    // down on short phones (Safari with its toolbars showing).
+    const top = Math.max(20, h * 0.05)
+    const bottom = Math.max(top + 120, fit.copyTop - 18)
+    const room = bottom - top
+    const bw = 150
+    const bh = 88
+    const gap = 64 + 40 * clamp01((room - 300) / 200)
+    const need = 128 + gap + 2 * bh
+    const z0 = Math.min(1.5, (0.88 * w) / (2 * bw), room / need)
+    // Screen top-down to world top-down, through the base camera.
+    const wy = (v: number) => h / 2 + (v - h / 2) / z0
+    const t0 = wy(top) + (room / z0 - need) / 2
+    const srv: Rect = [sn(w * 0.5), sn(y(t0 + 64)), 136, 64]
+    const brw: Rect = [sn(w * 0.5), sn(y(t0 + 128 + gap + bh)), bw, bh]
+    // The hero's chip sits between the hero copy and the next button, if it fits.
+    const hg = fit.nextTop - fit.heroBottom
+    const ch = Math.round(Math.min(52, w * 0.13, hg / 2 - 30))
+    // The map takes the server card's place, over the browser.
+    const brwTop = h / 2 + (y(brw[1] + brw[3]) - h / 2) * z0
+    const mh = Math.min(Math.min(w * 0.96, 720) / MAP_AR, brwTop - top - 24)
+    const mc = (top + brwTop - 12) / 2
     return {
       srv,
       brw,
-      nodes: [at(0.13, 0.12), at(0.52, 0.1), at(0.87, 0.14), at(0.2, 0.27)].map(([a, b]) => [a, b, 13]),
-      users: [
-        [at(0.26, 0.15), at(0.42, 0.19)],
-        [at(0.64, 0.17), at(0.84, 0.27)],
-        [at(0.08, 0.34), at(0.36, 0.31)],
-      ],
-      edge: [brw[0] + C, et, 24],
-      edgePort: [brw[0] + C, et - 24],
-      chip: [sn(w * 0.5), sn(h * 0.33), ch],
+      map: [sn(w * 0.5), y(wy(mc)), (mh * MAP_AR) / 2 / z0, mh / 2 / z0],
+      brwEdge: [brw[0], brw[1]],
+      chip: ch >= 22 ? [sn(w * 0.5), sn(y((fit.heroBottom + fit.nextTop) / 2)), ch] : [0, 0, 0],
       ta: [srv[0] - C, srv[1] - srv[3]],
       tb: [brw[0] + C, brw[1] + brw[3]],
       vert: true,
+      z0,
+      band: [top, bottom],
     }
   }
-  const srv: Rect = [sn(w * 0.2), sn(y(h * 0.33)), 148, 80]
-  const bw = Math.min(210, w * 0.17)
-  const bh = Math.min(136, h * 0.17)
-  const brw: Rect = [sn(w * 0.7), sn(y(h * 0.4)), bw, bh]
+  // Landscape: the diagram is laid out for a W x H screen, at least 1440 x 900,
+  // and the base camera (w/2, h/2, z0) scales it down to fit, so smaller
+  // screens (tablets, Safari with its toolbars) get the same composition.
+  const top = Math.max(24, h * 0.06)
+  const bottom = fit.copyTop - 16
+  const z0 = Math.min(1, w / 1440, (bottom - top) / 300)
+  const W = w / z0
+  const H = h / z0
+  const bw = Math.min(210, W * 0.17)
+  const bh = Math.min(136, H * 0.17)
+  // Virtual to world, top-down: the virtual screen's center lands on the
+  // camera's, unless that runs the browser into the copy; then the pair
+  // centers in the band above the copy instead.
+  const wy = (v: number) => h / 2 + (v - h / 2) / z0
+  const [st, bb] = [H * 0.33 - 80, H * 0.4 + bh]
+  let shift = (h - H) / 2
+  if (wy(bottom) < bb + shift) shift = wy((top + bottom) / 2) - (st + bb) / 2
+  const dx = sn((w - W) / 2)
+  const dy = -sn(shift)
+  const srv: Rect = [sn(W * 0.2) + dx, sn(h - H * 0.33) + dy, 148, 80]
+  const brw: Rect = [sn(W * 0.7) + dx, sn(h - H * 0.4) + dy, bw, bh]
   const ch = Math.round(Math.min(88, Math.max(56, w * 0.055)))
-  const ex = sn(brw[0] - brw[2] - 128)
-  const at = (x: number, t: number): V2 => [w * x, y(h * t)]
+  // The map spans the top; the browser tucks under it, right of the copy.
+  // Picked on screen, then taken through the base camera into the world.
+  const wx = (v: number) => w / 2 + (v - w / 2) / z0
+  const mh = Math.min(h * 0.21, (w * 0.46) / MAP_AR)
+  const mt = h * 0.09
+  const bt = Math.max(mt + 2 * mh + bh * z0 + 28, h * 0.62)
   return {
     srv,
     brw,
-    nodes: [at(0.09, 0.2), at(0.3, 0.44), at(0.4, 0.13), at(0.9, 0.13)].map(([a, b]) => [a, b, 16]),
-    users: [
-      [at(0.14, 0.34), at(0.36, 0.27)],
-      [at(0.52, 0.16), at(0.74, 0.1)],
-      [at(0.24, 0.55), at(0.5, 0.52)],
-    ],
-    edge: [ex, brw[1], 34],
-    edgePort: [ex + 34, brw[1]],
+    map: [w / 2, y(wy(mt + mh)), (mh * MAP_AR) / z0, mh / z0],
+    brwEdge: [wx(Math.min(w * 0.78, w - bw * z0 - 48)), y(wy(bt))],
     chip: [sn(w * 0.72), sn(h * 0.5), ch],
     ta: [srv[0] + srv[2], srv[1]],
     tb: [brw[0] - brw[2], brw[1]],
     vert: false,
+    z0,
+    band: [0, fit.copyTop],
   }
 }
 
@@ -170,22 +211,33 @@ function keyed(s: number, keys: Key[]): [number, number, number] {
 
 function camera(s: number, out: number, L: Layout, w: number, h: number): [number, number, number] {
   const c: V2 = [w / 2, h / 2]
-  const { srv, brw } = L
+  const { srv, brw, z0 } = L
   // Frame both cards; on landscape keep the pair in the top of the screen so
-  // the step copy has the bottom.
-  const both: V2 = L.vert ? c : [(srv[0] + brw[0]) / 2, h / 2]
-  const patch: V2 = L.vert ? c : [(srv[0] + brw[0]) / 2, (srv[1] + brw[1]) / 2 - 90]
-  const zs = L.vert ? 1.35 : 1.7
-  const zp = L.vert ? 1.06 : 1.18
+  // the step copy has the bottom. Portrait centers on the cards (on the grid).
+  const both: V2 = [(srv[0] + brw[0]) / 2, h / 2]
+  let patch: V2 = [(srv[0] + brw[0]) / 2, (srv[1] + brw[1]) / 2 - 90]
+  let zs = 1.7 * z0
+  let zp = 1.18 * z0
+  let focus: V2 = [srv[0], srv[1] - 30]
+  if (L.vert) {
+    // Portrait: zoom about the middle of the band, so what's in the band stays in it.
+    const mid = (L.band[0] + L.band[1]) / 2
+    const room = L.band[1] - L.band[0]
+    const aim = (p: number, z: number) => p + (mid - h / 2) / z // world y seen at `mid`
+    zs = Math.min(1.35 * Math.max(1, z0), (0.94 * w) / (2 * srv[2]), room / 150)
+    zp = Math.min(1.06 * z0, (0.94 * w) / (2 * brw[2]))
+    focus = [srv[0], aim(srv[1], zs)]
+    patch = [srv[0], aim(h / 2 - (mid - h / 2) / z0, zp)]
+  }
   const k = keyed(s, [
     [0.06, ...c, 1],
-    [0.2, srv[0], srv[1] - 30, zs],
-    [0.32, srv[0], srv[1] - 30, zs],
-    [0.44, ...both, 1],
-    [0.56, ...both, 1],
+    [0.2, ...focus, zs],
+    [0.32, ...focus, zs],
+    [0.44, ...both, z0],
+    [0.56, ...both, z0],
     [0.64, ...patch, zp],
     [0.76, ...patch, zp],
-    [0.86, ...both, 1],
+    [0.86, ...both, z0],
   ])
   k[2] *= 1 - 0.3 * ss(out)
   return k
@@ -213,9 +265,6 @@ const UNIFORMS = [
   'u_arcUp',
   'u_arcDn',
   'u_chip',
-  'u_net',
-  ...[0, 1, 2, 3].map((i) => `u_nodes[${i}]`),
-  ...[0, 1, 2].flatMap((i) => [`u_users[${i}]`, `u_userT[${i}]`]),
 ]
 
 interface Arc {
@@ -242,14 +291,20 @@ export function mountStory(root: HTMLElement) {
   const button = q<HTMLButtonElement>('[data-add]')
   const reduce = reducedMotion()
   const chipEl = q('[data-ov="core"]')
-  const edgeEl = q('[data-ov="edge"]')
-  const nodeEls = [...root.querySelectorAll<HTMLElement>('[data-ov="node"]')]
+  const mapEl = q('[data-ov="map"]')
+  const beacons = [...root.querySelectorAll<SVGGElement>('[data-beacon]')]
+  const link = root.querySelector<SVGLineElement>('[data-link]')!
+  const packet = root.querySelector<SVGCircleElement>('[data-packet]')!
+  const you = root.querySelector<SVGGElement>('[data-you]')!
+  const youMark = you.firstElementChild as SVGGElement
+  const edgeAt = EDGES.map(([, lon, lat]) => project(lon, lat))
+  const cities = TRIP.map(([lon, lat]) => project(lon, lat))
   const next = q<HTMLButtonElement>('[data-next]')
   const nextLabel = q('[data-next-label]')
 
   let count = 0
   let geom = ''
-  let L = layout(1, 1)
+  let L = layout(1, 1, { copyTop: 1, heroBottom: 0, nextTop: 1 })
   let main = lanePath(L, 0, 0)
   let len = 1
   let cur = -2
@@ -271,10 +326,15 @@ export function mountStory(root: HTMLElement) {
   let energy = 0
   let lastScroll = 0
   let edge = 0
-  // Visitors in the edge beat: nearest node, handoff flash, packet timer.
-  const users = [0, 1, 2].map((i) => ({ near: -1, flash: 0, t: -1.3 * i }))
-  let coreAt = ''
-  let laneAt = -1
+  // The edge beat: where you are on the trip, the edge serving you, and the
+  // edge your latest event went to.
+  let leg = 0
+  let legT = GLIDE
+  let near = -1
+  let sentTo = 0
+  let youAt: V2 = cities[0]
+  let brwAt = ''
+  let chipAt: V2 = [0, 0]
   const paced: number[] = []
   // Move toward `to`, forward no faster than 1/`secs` per second. Backward is
   // quick, and without a frame delta (a still frame) it snaps.
@@ -288,21 +348,23 @@ export function mountStory(root: HTMLElement) {
   const setText = (n: HTMLElement, v: string) => {
     if (n.textContent !== v) n.textContent = v
   }
-  const flash = (el: HTMLElement, cls: string) => {
+  const flash = (el: Element, cls: string) => {
     el.classList.remove(cls)
-    void el.offsetWidth
+    void el.getBoundingClientRect()
     el.classList.add(cls)
   }
   const send = () => {
     up = { t: 0, lane, i: 1 }
-    // Stateless: the event carries its signed state along.
+    // Stateless: the event carries its signed state along to the nearest edge.
     setText(chipText, edge > 0.5 ? '@click + state' : '@click')
+    sentTo = Math.max(0, near)
     chipT = 0
   }
   const onServer = () => {
     count++
     setText(serverCount, String(count))
     if (edge < 0.5) flash(srvEl, 'hit')
+    else flash(beacons[sentTo], 'hit')
     srvHit = 1
     dn = { t: -0.02, lane: up?.lane ?? lane, i: 1 }
   }
@@ -312,6 +374,52 @@ export function mountStory(root: HTMLElement) {
     setText(chipText, `patch "${count}"`)
     chipT = 0
     brwHit = 1
+  }
+
+  // The edge beat on the map (in map units): you, the edge nearest you, and
+  // an event's packet crossing to its edge and the patch coming back.
+  const trip = (on: number) => {
+    const a = cities[leg]
+    const b = cities[(leg + 1) % cities.length]
+    // The last leg heads east over the Pacific and wraps around.
+    const bx = b[0] < a[0] ? b[0] + MAP_W : b[0]
+    const t = ss(Math.min(1, legT / GLIDE))
+    youAt = [(a[0] + (bx - a[0]) * t) % MAP_W, a[1] + (b[1] - a[1]) * t]
+    let n = 0
+    edgeAt.forEach((e, i) => {
+      const d = (p: V2) => Math.hypot(p[0] - youAt[0], p[1] - youAt[1])
+      if (d(e) < d(edgeAt[n])) n = i
+    })
+    if (n !== near) {
+      beacons[near]?.classList.remove('on')
+      beacons[n].classList.add('on')
+      near = n
+    }
+    you.setAttribute('transform', `translate(${youAt[0].toFixed(2)} ${youAt[1].toFixed(2)})`)
+    you.style.opacity = String(on)
+    const e = edgeAt[near]
+    link.setAttribute('x1', youAt[0].toFixed(2))
+    link.setAttribute('y1', youAt[1].toFixed(2))
+    link.setAttribute('x2', String(e[0]))
+    link.setAttribute('y2', String(e[1]))
+    link.style.opacity = String(on * 0.9)
+    // Packet: out along the link, then the patch back.
+    let f = -1
+    let o = 0
+    if (dn && dn.t >= 0 && dn.i > 0.9) {
+      f = 1 - Math.min(1, dn.t / HOP)
+      o = clamp01(1 - (dn.t - HOP) * 8)
+    } else if (up) {
+      f = Math.min(1, up.t / HOP)
+      o = 1
+    }
+    const to = edgeAt[sentTo]
+    if (f >= 0) {
+      packet.setAttribute('cx', (youAt[0] + (to[0] - youAt[0]) * f).toFixed(2))
+      packet.setAttribute('cy', (youAt[1] + (to[1] - youAt[1]) * f).toFixed(2))
+    }
+    packet.style.opacity = String(o * on)
+    link.classList.toggle('busy', f >= 0 && o > 0.5)
   }
 
   const place = (el: HTMLElement, x: number, y: number, h: number) => {
@@ -353,31 +461,48 @@ export function mountStory(root: HTMLElement) {
     const key = `${w}x${h}`
     if (key !== geom) {
       geom = key
-      L = layout(w, h)
+      L = layout(w, h, {
+        copyTop: Math.min(...steps.slice(1).map((el) => el.offsetTop)),
+        heroBottom: steps[0].offsetTop + steps[0].offsetHeight,
+        // On the hero the next button sits 80px up (see .next).
+        nextTop: h - 80 - next.offsetHeight,
+      })
       main = lanePath(L, 0, 0)
       len = pathLength(main)
       size(srvEl, L.srv, h)
       size(brwEl, L.brw, h)
-      coreAt = ''
-      laneAt = -1
+      size(chipEl, [L.chip[0], L.chip[1], L.chip[2], L.chip[2]], h)
+      size(mapEl, L.map, h)
+      // Keep the map's markers and labels legible when the map is small.
+      const k = Math.min(2.4, Math.max(1, (11 * MAP_W) / (3.6 * 2 * L.map[2] * L.z0))).toFixed(2)
+      beacons.forEach((b) => b.setAttribute('transform', `scale(${k})`))
+      youMark.setAttribute('transform', `scale(${k})`)
+      packet.setAttribute('r', String(1.3 * +k))
+      mapEl.style.setProperty('--k', k)
+      brwAt = ''
       root.dataset.orient = L.vert ? 'portrait' : 'landscape'
       scrollRange = Math.max(1, root.offsetHeight - innerHeight)
-      const mid = pointAt(main, len / 2)
-      place(chip, mid[0], mid[1], h)
+      chipAt = pointAt(main, len / 2)
       stackEls.forEach((el, k) => {
         const pts = lanePath(L, stackShift[k][0], stackShift[k][1])
         const p = pointAt(pts, pathLength(pts) * 0.5)
         place(el, p[0], p[1], h)
       })
+      const lanes = LANES.map((o) => lanePath(L, o * C, 0))
+      // Portrait: the labels stack beside the lanes, where there's room.
+      const right = Math.max(...lanes.flat().map((p) => p[0])) + 10
+      const mid = (L.ta[1] + L.tb[1]) / 2
+      // Keep them on screen: portrait frames this beat at (srv x, h/2, z0).
+      const rim = L.srv[0] + (w / 2 - 8) / L.z0
       txEls.forEach((el, k) => {
-        const pts = lanePath(L, LANES[k] * C, 0)
-        const p = pointAt(pts, L.vert ? 56 : 96)
+        const x = Math.min(right, rim - el.offsetWidth)
+        const p = L.vert ? [x, mid + (1 - k) * 20] : pointAt(lanes[k], 96)
         place(el, p[0], p[1], h)
       })
     }
     const { s: sa, out } = split(st.scroll)
     const s = Math.min(1, sa / CORE)
-    const [cx, cy, z] = camera(s, out, L, w, h)
+    const cam = camera(s, out, L, w, h)
 
     // Reveals follow the scroll but never faster than their own pace, so a
     // quick scroll can't rush the server compiling or the wire drawing in.
@@ -388,24 +513,23 @@ export function mountStory(root: HTMLElement) {
     const merge = pace(3, ramp(s, 0.47, 0.07), 1.0, dt)
     const tx = pace(4, ramp(s, 0.8, 0.06), 0.7, dt)
     const chipOn = 1 - ramp(s, 0.02, 0.09)
-    edge = pace(5, ramp(sa, EDGE, 0.06), 0.8, dt)
-    // In the edge beat the server end of the wire slides over to the edge node.
+    edge = pace(5, ramp(sa, EDGE, 0.06), 1.2, dt)
+    // In the edge beat the server and its wire go, and the browser makes room
+    // for the map.
     const ee = ss(edge)
-    const mix = (a: number[], b: number[]) => a.map((v, i) => v + (b[i] - v) * ee)
-    const edgeRect: Rect = [L.edge[0], L.edge[1], L.edge[2], L.edge[2]]
-    const ta = mix(L.ta, L.edgePort) as V2
-    const drop = L.vert ? DROP * ee : 0
-    const brwR: Rect = [L.brw[0], L.brw[1] - drop, L.brw[2], L.brw[3]]
-    const tb: V2 = [L.tb[0], L.tb[1] - drop]
-    if (ee !== laneAt) {
-      laneAt = ee
-      brwEl.style.translate = `0 ${drop}px`
-      main = lanePath({ ...L, ta, tb }, 0, 0)
-      len = pathLength(main)
-      // On the short edge wire the label sits over the edge node instead.
-      const [ex, ey, er] = L.edge
-      const mid = ee > 0.5 ? (L.vert ? [ex + er, ey] : [ex, ey + er + 16]) : pointAt(main, len / 2)
-      place(chip, mid[0], mid[1], h)
+    const gone = 1 - ramp(edge, 0, 0.4)
+    const bx = (L.brwEdge[0] - L.brw[0]) * ee
+    const by = (L.brwEdge[1] - L.brw[1]) * ee
+    const brwR: Rect = [L.brw[0] + bx, L.brw[1] + by, L.brw[2], L.brw[3]]
+    const tb: V2 = [L.tb[0] + bx, L.tb[1] + by]
+    // Landscape recenters on the map; portrait is framed for it already.
+    const cx = L.vert ? cam[0] : cam[0] + (w / 2 - cam[0]) * ee
+    const cy = L.vert ? cam[1] : cam[1] + (h / 2 - cam[1]) * ee
+    const z = cam[2]
+    const bk = `${bx.toFixed(1)} ${by.toFixed(1)}`
+    if (bk !== brwAt) {
+      brwAt = bk
+      brwEl.style.translate = `${bx}px ${-by}px`
     }
     const conv = ramp(s, 0.12, 0.06) * (1 - ramp(s, 0.3, 0.06))
     live = s >= 0.56 && out < 0.9
@@ -450,16 +574,28 @@ export function mountStory(root: HTMLElement) {
         up = dn = null
         queued = 0
       }
+      // The trip: glide to the next city, stay a moment, click on arrival.
+      if (edge > 0.9) {
+        legT += dt
+        if (legT >= GLIDE + STAY) {
+          legT -= GLIDE + STAY
+          leg = (leg + 1) % cities.length
+        }
+        // Two clicks in each city: on arrival, then once more.
+        const clicked = (at: number) => legT - dt < at && legT >= at
+        if (live && (clicked(GLIDE) || clicked(GLIDE + 0.8))) queued = Math.min(queued + 1, 4)
+      }
+      const hop = edge > 0.5 ? HOP : ARC
       if (up) {
         const before = up.t
         up.t += dt
-        if (before < ARC && up.t >= ARC) onServer()
+        if (before < hop && up.t >= hop) onServer()
         if (up.t > 0.4) up = null
       }
       if (dn) {
         const before = dn.t
         dn.t += dt
-        if (before < ARC && dn.t >= ARC && dn.i > 0.9) onBrowser()
+        if (before < hop && dn.t >= hop && dn.i > 0.9) onBrowser()
         if (dn.t > 0.4) dn = null
       }
       srvHit = Math.max(0, srvHit - dt * 2.2)
@@ -480,84 +616,56 @@ export function mountStory(root: HTMLElement) {
     set('u_flow', flow)
     set('u_energy', energy)
     set('u_out', out * 0.8)
-    set('u_amb', 1 - 0.6 * srvOn)
-    set('u_srv', ...mix(L.srv, edgeRect))
+    set('u_amb', (1 - 0.6 * srvOn) * (1 - 0.5 * ee))
+    set('u_srv', ...L.srv)
     set('u_brw', ...brwR)
-    set('u_ta', ...ta)
+    set('u_ta', ...L.ta)
     set('u_tb', ...tb)
     set('u_vert', L.vert ? 1 : 0)
-    set('u_srvOn', srvOn)
+    set('u_srvOn', srvOn * gone)
     set('u_brwOn', brwOn)
     set('u_srvHit', srvHit)
     set('u_brwHit', brwHit)
     set('u_conv', conv)
-    set('u_draw', draw)
+    set('u_draw', draw * gone)
     set('u_stack', stackVis, merge)
-    set('u_tx', tx * (1 - ee))
+    set('u_tx', tx * gone)
     set('u_arcUp', ...arcU(up))
     set('u_arcDn', ...arcU(dn))
-    // The chip uniform is the hero's chip early on and the edge node later.
-    const onHero = sa < 0.4
-    set('u_chip', ...(onHero ? L.chip : L.edge), onHero ? chipOn : edge)
-    set('u_net', edge)
-    const nodeVis = L.nodes.map((_, i) => ss(ramp(edge, 0.15 + 0.12 * i, 0.3)))
-    L.nodes.forEach((n, i) => set(`u_nodes[${i}]`, ...n, nodeVis[i]))
-    // Every visitor drifts along its path and wires to whichever node is closest.
-    const all: V2[] = [[L.edge[0], L.edge[1]], ...L.nodes.map((n): V2 => [n[0], n[1]])]
-    const uVis = ramp(edge, 0.6, 0.35)
-    L.users.forEach(([a, b], i) => {
-      const u = users[i]
-      const k = 0.5 - 0.5 * Math.cos(st.time * (0.42 + 0.09 * i) + i * 2.1)
-      const p: V2 = [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]
-      let near = 0
-      all.forEach((n, j) => {
-        if (Math.hypot(n[0] - p[0], n[1] - p[1]) < Math.hypot(all[near][0] - p[0], all[near][1] - p[1])) near = j
-      })
-      if (near !== u.near) {
-        if (u.near >= 0) u.flash = 1
-        u.near = near
-      }
-      u.flash = Math.max(0, u.flash - dt * 2.5)
-      // An event up and its patch back down every couple of seconds.
-      u.t += dt
-      if (u.t > 2.2) u.t = 0
-      set(`u_users[${i}]`, ...p, ...all[near])
-      set(`u_userT[${i}]`, uVis, u.t >= 0 && u.t < 0.5 ? u.t / 0.25 : -1, u.flash, 0)
-    })
+    set('u_chip', ...L.chip, L.chip[2] ? chipOn : 0)
 
     // HTML overlays share the camera: one transform maps world to screen.
     world.style.transform = `translate(${w / 2 - cx * z}px, ${h / 2 - (h - cy) * z}px) scale(${z})`
     const fade = clamp01(1 - out * 2.2)
-    const at = onHero ? 'hero' : 'edge'
-    if (at !== coreAt) {
-      coreAt = at
-      const c = onHero ? L.chip : L.edge
-      size(chipEl, [c[0], c[1], c[2], c[2]], h)
-      L.nodes.forEach((n, i) => nodeEls[i] && place(nodeEls[i], n[0], n[1] - n[2] - 8, h))
-      if (L.vert) place(edgeEl, L.edge[0] - L.edge[2], L.edge[1], h)
-      else place(edgeEl, L.edge[0], L.edge[1] - L.edge[2] - 10, h)
-    }
-    chipEl.style.opacity = String(onHero ? ramp(chipOn, 0.4, 0.6) : ramp(edge, 0.3, 0.6) * fade)
-    edgeEl.style.opacity = String(ramp(edge, 0.5, 0.5) * fade)
-    nodeEls.forEach((el, i) => (el.style.opacity = String(ramp(nodeVis[i], 0.5, 0.5) * fade)))
+    chipEl.style.opacity = String(L.chip[2] ? ramp(chipOn, 0.4, 0.6) : 0)
+    const mapOn = ramp(edge, 0.25, 0.5) * fade
+    mapEl.style.opacity = String(mapOn)
+    if (mapOn > 0) trip(ramp(edge, 0.75, 0.25))
     // Stateless: no one server holds the app any more; it runs on every node.
-    srvEl.style.opacity = String(ramp(srvOn, 0.55, 0.45) * fade * (1 - ee))
+    srvEl.style.opacity = String(ramp(srvOn, 0.55, 0.45) * fade * gone)
     brwEl.style.opacity = String(ramp(brwOn, 0.5, 0.5) * fade)
     const cardOn = live && brwOn > 0.9 && fade > 0.5
     if (button.disabled === cardOn) {
       button.disabled = !cardOn
       brwEl.toggleAttribute('inert', !cardOn)
     }
+    if (edge > 0.5) {
+      // In the edge beat the event label rides along with you.
+      const u = L.map[2] / MAP_W
+      place(chip, L.map[0] - L.map[2] + youAt[0] * 2 * u, L.map[1] + L.map[3] - youAt[1] * 2 * u, h)
+    } else place(chip, chipAt[0], chipAt[1], h)
     chip.style.opacity = String(live ? clamp01(1 - (chipT - 0.5) / 0.4) * fade : 0)
     stackEls.forEach((el) => (el.style.opacity = String(stackVis * (1 - merge) * fade)))
     txEls.forEach((el, k) => {
-      el.style.opacity = String(ramp(tx, 0.4, 0.6) * fade * (1 - ee))
+      el.style.opacity = String(ramp(tx, 0.4, 0.6) * fade * gone)
       el.classList.toggle('on', tx > 0.5 && (up?.lane ?? dn?.lane) === LANES[k])
     })
     updateSteps(sa, out)
   }
 
   const hero = createShaderHero(root, canvas, storyFrag, UNIFORMS, frame)
+  // The layout measures the copy, which moves once the web fonts load.
+  void document.fonts?.ready.then(() => (geom = ''))
   // Without WebGL the copy still steps through on scroll over a static grid.
   const onScroll = () => {
     const r = root.getBoundingClientRect()

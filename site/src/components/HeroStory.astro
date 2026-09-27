@@ -4,6 +4,7 @@ import { Icon } from 'astro-icon/components'
 
 import { createHighlighter } from 'shiki'
 import PywireMark from '../assets/img/pywire-mark.svg'
+import { EDGES, MAP_H, MAP_W, WORLD, project } from '../scripts/hero-story/world'
 import pywireGrammar from '../../public/grammars/pywire.tmLanguage.json'
 
 // counter.wire for the server card, highlighted with the real .wire grammar in
@@ -34,6 +35,11 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     },
   ],
 })
+
+// The edge beat's world map: one round-capped zero-length stroke per land dot.
+const landPath = WORLD.flatMap((row, r) =>
+  [...row].flatMap((c, i) => (c === '#' ? [`M${i * 3 + 1.5} ${r * 3 + 1.5}h0`] : [])),
+).join('')
 
 /**
  * HeroStory — "the live conduit": a pinned scroll story over a WebGL circuit
@@ -67,11 +73,33 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebSocket</span></span>
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebTransport</span></span>
       <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">HTTP long polling</span></span>
-      <span class="ov" data-ov="edge" aria-hidden="true"><span class="lbl lbl-edge">nearest edge</span></span>
-      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">fra</span></span>
-      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">iad</span></span>
-      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">sin</span></span>
-      <span class="ov" data-ov="node" aria-hidden="true"><span class="lbl lbl-node">syd</span></span>
+      <svg class="map" data-ov="map" viewBox={`0 0 ${MAP_W} ${MAP_H}`} aria-hidden="true">
+        <path class="map-land" d={landPath}></path>
+        <line class="map-link" data-link x1="0" y1="0" x2="0" y2="0"></line>
+        {
+          EDGES.map(([code, lon, lat]) => {
+            const [x, y] = project(lon, lat)
+            return (
+              <g transform={`translate(${x} ${y})`}>
+                <g class="beacon" data-beacon>
+                  <circle class="b-ping" r="3.6" />
+                  <circle class="b-ring" r="3.6" />
+                  <circle class="b-core" r="1.5" />
+                  <text y="-5.6">{code}</text>
+                </g>
+              </g>
+            )
+          })
+        }
+        <circle class="map-packet" data-packet r="1.3"></circle>
+        <g data-you>
+          <g class="you">
+            <circle class="you-ring" r="3"></circle>
+            <circle class="you-core" r="1.4"></circle>
+            <text y="8">you</text>
+          </g>
+        </g>
+      </svg>
       <span class="ov" data-ov="chip" aria-hidden="true"><code class="wchip" data-chip-text>@click</code></span>
       <div class="brw" data-ov="browser" role="group" aria-label="Live counter demo" inert>
         <div class="win-bar" aria-hidden="true">
@@ -482,18 +510,133 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     text-decoration-color: color-mix(in oklch, var(--text-decoration-color) 70%, transparent);
   }
 
-  .lbl-edge {
-    translate: -50% 0;
-    border-color: color-mix(in oklch, var(--accent-color) 55%, var(--border-color));
-    color: var(--accent-color);
+  // The edge beat: a dot-matrix world, edge locations, and you travelling.
+  .map {
+    position: absolute;
+    opacity: 0;
+    // The world layer has no width, so the site's svg max-width: 100% would
+    // collapse the map.
+    max-width: none;
+    overflow: visible;
+    font-family: var(--font-mono);
   }
 
-  .lbl-node {
-    translate: -50% 0;
+  .map-land {
+    stroke: color-mix(in oklch, var(--foreground-color) 26%, transparent);
+    stroke-linecap: round;
+    stroke-width: 1.35;
   }
 
-  :global([data-orient='portrait']) .lbl-edge {
-    translate: calc(-100% - 8px) -50%;
+  .beacon {
+    text {
+      transition: fill 0.25s;
+      fill: color-mix(in oklch, var(--foreground-color) 55%, transparent);
+      font-size: 3.6px;
+      text-anchor: middle;
+      letter-spacing: 0.06em;
+    }
+
+    .b-ring {
+      transition:
+        stroke 0.25s,
+        r 0.25s;
+      fill: color-mix(in oklch, var(--background-color) 70%, transparent);
+      stroke: color-mix(in oklch, var(--accent-color) 45%, transparent);
+      stroke-width: 0.5;
+    }
+
+    .b-core {
+      fill: color-mix(in oklch, var(--accent-color) 70%, transparent);
+    }
+
+    // The edge serving you right now.
+    &:global(.on) {
+      text {
+        fill: var(--accent-color);
+      }
+
+      .b-ring {
+        stroke: var(--accent-color);
+        stroke-width: 0.8;
+      }
+
+      .b-core {
+        fill: var(--accent-color);
+      }
+    }
+
+    // An event landing: a ring pings out from the node.
+    .b-ping {
+      transform-box: fill-box;
+      transform-origin: center;
+      opacity: 0;
+      fill: none;
+      stroke: var(--accent-color);
+      stroke-width: 0.6;
+    }
+
+    &:global(.hit) .b-ping {
+      animation: beacon-ping 0.6s ease-out;
+    }
+  }
+
+  @keyframes beacon-ping {
+    from {
+      transform: scale(1);
+      opacity: 1;
+    }
+
+    to {
+      transform: scale(2.6);
+      opacity: 0;
+    }
+  }
+
+  :global(:root.darkmode) .beacon:global(.on) {
+    filter: drop-shadow(0 0 2.5px var(--accent-color));
+  }
+
+  .map-link {
+    transition: stroke-width 0.15s;
+    stroke: var(--accent-color);
+    stroke-dasharray: calc(1.2px * var(--k, 1)) calc(1.6px * var(--k, 1));
+    stroke-linecap: round;
+    // --k scales the markers up when the map is small (set by the story).
+    stroke-width: calc(0.7px * var(--k, 1));
+
+    // A round trip in flight.
+    &:global(.busy) {
+      stroke-dasharray: none;
+      stroke-width: calc(1.1px * var(--k, 1));
+    }
+  }
+
+  .map-packet {
+    opacity: 0;
+    fill: var(--accent-color);
+  }
+
+  :global(:root.darkmode) .map-packet {
+    filter: drop-shadow(0 0 2px var(--accent-color));
+  }
+
+  .you {
+    .you-ring {
+      fill: none;
+      stroke: var(--foreground-color);
+      stroke-width: 0.6;
+    }
+
+    .you-core {
+      fill: var(--foreground-color);
+    }
+
+    text {
+      fill: var(--foreground-color);
+      font-size: 3.6px;
+      text-anchor: middle;
+      letter-spacing: 0.06em;
+    }
   }
 
   .lbl-tx {
@@ -509,7 +652,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
   }
 
   :global([data-orient='portrait']) .lbl-tx {
-    translate: 6px -50%;
+    translate: 0 -50%;
   }
 
   .wchip {
@@ -822,6 +965,44 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
       transform-origin: left;
       inset: 0;
       background: var(--accent-color);
+    }
+  }
+
+  // Short phone screens (Safari or Chrome with their toolbars showing): tighter
+  // copy, so the diagram above it keeps a readable size.
+  @media (max-width: 799px) and (max-height: 760px) {
+    .copy {
+      top: clamp(76px, 14svh, 190px);
+      gap: 12px;
+
+      &.low {
+        bottom: 78px;
+      }
+
+      h2 {
+        font-size: 1.75rem;
+      }
+    }
+
+    .hero-headline {
+      font-size: clamp(2.4rem, 1.2rem + 5vw, 3rem);
+    }
+
+    .lead {
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+  }
+
+  // Short landscape screens (tablets with toolbars, small laptops): a smaller
+  // step headline leaves the diagram more room.
+  @media (min-width: 800px) and (max-height: 820px) {
+    .copy {
+      gap: 14px;
+
+      h2 {
+        font-size: clamp(2rem, 1rem + 2.4vw, 2.9rem);
+      }
     }
   }
 

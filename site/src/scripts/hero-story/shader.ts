@@ -12,10 +12,6 @@
 //   - the conduit between them, drawn in (u_draw), the tangle of old-stack
 //     routes that merges into it (u_stack), and the three transport lanes it
 //     splits into (u_tx)
-//   - the edge network (u_net): more edge nodes (u_nodes: center, half size,
-//     visibility) and visitors moving between them (u_users: position, then
-//     the nearest node; u_userT: visibility, packet progress 0..2, handoff
-//     flash), each wired to whichever node is closest
 //   - arcs: an event or a patch crossing the wire. u_arcUp / u_arcDn are
 //     (head distance, intensity, lane, unused); they cross in a few frames and
 //     light the whole wire at once, like current, instead of travelling.
@@ -25,7 +21,7 @@ uniform vec3 u_bg;uniform vec3 u_ink;uniform vec3 u_acc;
 uniform vec3 u_cam;uniform float u_out;uniform float u_amb;uniform float u_flow;uniform float u_energy;
 uniform vec4 u_srv;uniform vec4 u_brw;uniform vec2 u_ta;uniform vec2 u_tb;uniform float u_vert;
 uniform float u_srvOn;uniform float u_brwOn;uniform float u_srvHit;uniform float u_brwHit;uniform float u_conv;
-uniform vec4 u_chip;uniform float u_net;uniform vec4 u_nodes[4];uniform vec4 u_users[3];uniform vec4 u_userT[3];uniform float u_draw;uniform vec2 u_stack;uniform float u_tx;uniform vec4 u_arcUp;uniform vec4 u_arcDn;
+uniform vec4 u_chip;uniform float u_draw;uniform vec2 u_stack;uniform float u_tx;uniform vec4 u_arcUp;uniform vec4 u_arcDn;
 const float C=32.0;
 float aa,W,Z;
 float h1(float n){return fract(sin(n*127.1+311.7)*43758.5453);}
@@ -224,37 +220,6 @@ void main(){
     }
   }
 
-  // The edge network.
-  float netLine=0.0,netLit=0.0,nodeEdge=0.0,nodeFill=0.0,nodeHalo=0.0,dots=0.0;
-  if(u_net>0.001){
-    for(int i=0;i<3;i++){
-      vec4 U=u_users[i];vec4 T=u_userT[i];
-      if(T.x<0.001)continue;
-      vec2 sg=seg(css,U.xy,U.zw);float Lk=length(U.zw-U.xy);
-      netLine=max(netLine,ln(sg.x,1.1)*T.x);
-      // An event runs up to the node and its patch comes straight back.
-      float hd=(T.y<1.0?T.y:2.0-T.y)*Lk;
-      float pk=exp(-abs(sg.y-hd)/7.0)*step(0.0,T.y);
-      netLit=max(netLit,(pk*1.3+T.z*0.7)*ln(sg.x,2.2)*T.x);
-      float dd=length(css-U.xy);
-      dots=max(dots,max(ln(max(dd-3.5,0.0),1.0),ln(abs(dd-9.0),1.0)*0.55)*T.x);
-    }
-    for(int i=0;i<4;i++){
-      vec4 N=u_nodes[i];if(N.w<0.001)continue;
-      float hs=N.z*(0.6+0.4*N.w);
-      float sd=sdBox(css,vec4(N.xy,vec2(hs-4.0)))-4.0;
-      nodeFill=max(nodeFill,step(sd,0.0)*N.w);
-      nodeEdge=max(nodeEdge,ln(abs(sd),1.3)*N.w);
-      nodeHalo=max(nodeHalo,exp(-max(sd,0.0)/16.0)*step(0.0,sd)*N.w);
-      // Three pins a side.
-      vec2 q=css-N.xy;vec2 a=abs(q);
-      vec2 f=a.x>=a.y?vec2(a.x,q.y):vec2(a.y,q.x);
-      float py=clamp(floor(f.y/8.0+0.5),-1.0,1.0)*8.0;
-      vec2 pd=abs(f-vec2(hs+2.5,py))-vec2(2.5,1.4);
-      nodeEdge=max(nodeEdge,ln(max(max(pd.x,pd.y),0.0),1.0)*N.w*0.8);
-    }
-  }
-
   float ph=u_time*0.5+h2(gi)*20.0;
   float fl=step(0.975,h2(gi+floor(ph)*1.37))*pow(1.0-fract(ph),2.0)*insq*(1.0-inS*u_srvOn)*(1.0-inB*u_brwOn);
   vec3 col=u_bg;
@@ -265,10 +230,7 @@ void main(){
   col=mix(col,u_ink,clamp(stack*0.45,0.0,1.0));
   col=mix(col,u_acc,clamp(inW+fS*0.7+fB*0.7,0.0,1.0));
   col=mix(col,u_acc,clamp(wire*0.45+spark,0.0,1.0));
-  col=mix(col,u_acc,clamp(netLine*0.4+netLit,0.0,1.0));
-  col=mix(col,mix(u_bg,u_ink,0.07),nodeFill);
-  col=mix(col,u_acc,clamp(nodeEdge*0.85+dots,0.0,1.0));
-  float halo=haloS+haloB+haloC*0.6+nodeHalo*0.8;
+  float halo=haloS+haloB+haloC*0.6;
   col+=(u_acc*(halo*0.22+glow*0.35+cur*u_amb*0.18))*(1.0-u_light);
   col=mix(col,u_acc,clamp((halo*0.12+glow*0.25)*u_light,0.0,1.0));
   vec2 uv=gl_FragCoord.xy/u_res;
