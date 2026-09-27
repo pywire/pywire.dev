@@ -141,7 +141,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
       <p class="lead">WebSocket, WebTransport or HTTP long polling. Same app, same code.</p>
     </div>
     <div class="copy low step" data-step>
-      <p class="eyebrow">05 · Edge <span class="soon">Coming soon</span></p>
+      <p class="eyebrow">05 · Edge</p>
       <h2>Stateless, at the edge</h2>
       <p class="lead">
         No server process held open per visitor. State rides along with each event, signed, so the nearest edge node
@@ -650,16 +650,6 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     font-family: var(--font-mono);
     letter-spacing: 0.12em;
     text-transform: uppercase;
-  }
-
-  // Edge mode hasn't shipped yet.
-  .soon {
-    margin-left: 0.5em;
-    border: 1px solid color-mix(in oklch, var(--accent-color) 45%, transparent);
-    border-radius: 999px;
-    padding: 1px 7px;
-    font-size: 0.66rem;
-    letter-spacing: 0.08em;
   }
 
   .ctas {
