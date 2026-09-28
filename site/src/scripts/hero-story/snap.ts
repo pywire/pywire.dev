@@ -1,12 +1,16 @@
-// Snap scrolling for a pinned scroll story. Between the first and last stop,
-// a scroll gesture (wheel, swipe or arrow keys) glides to the next stop on a
-// critically damped spring instead of scrolling freely. New input retargets
-// the spring mid-glide, so steps chain and reverse without waiting, while the
-// momentum tail of a gesture that already moved a step is swallowed. Outside
-// the stops, and while a native gesture is still running, the page scrolls
-// natively; if it comes to rest between stops it settles onto the next one.
+// Snap scrolling for a pinned scroll story, one step per gesture. Between the
+// first and last stop, a scroll gesture (a wheel or trackpad swipe, a touch
+// swipe, an arrow key) glides to the next stop on a critically damped spring.
+// While a step plays, input is ignored, and the rest of the gesture that took
+// it (a trackpad's momentum, a spun wheel) is swallowed, so however fast you
+// scroll you see every step, one at a time. Past the ends the page scrolls
+// natively; a gesture that starts at the last stop heading out simply scrolls
+// the page. If the page comes to rest between stops (a scrollbar drag, a
+// native gesture that ran into the story), it settles onto the next stop.
 
 const RATE = 9 // spring rate: a glide settles in about 0.7 s
+const HOLD = 850 // ms after a step starts before another can
+const QUIET = 160 // ms without wheel events that ends a gesture
 const KEYS: Record<string, number> = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }
 
 export interface Snap {
@@ -17,20 +21,21 @@ export interface Snap {
 
 export function snapScroll(stops: () => number[], enabled: () => boolean): Snap {
   let target: number | null = null
-  let dir = 0
   let pos = 0
   let vel = 0
   let raf = 0
   let last = 0
-  let stepAt = -Infinity // when the latest step was taken
-  let restAt = -Infinity // when the latest glide settled
-  let nativeAt = -Infinity // latest wheel event left to the page
-  let wheelAt = -Infinity
-  let wheelMag = 0
-  let acc = 0
+  let stepAt = -Infinity // when the latest step started
   let settle = 0
   let lastY = scrollY
   let lastDir = 1
+  // The wheel gesture in progress: when its latest event came, whether it
+  // already did its one thing (took a step, or ran into a step playing), and
+  // whether it's the page's to scroll.
+  let wheelAt = -Infinity
+  let spent = false
+  let native = false
+  let acc = 0
 
   // 'instant': the site sets scroll-behavior: smooth, which would lag every frame.
   const put = (y: number) => scrollTo({ top: y, behavior: 'instant' })
@@ -44,7 +49,6 @@ export function snapScroll(stops: () => number[], enabled: () => boolean): Snap 
       target = null
       vel = 0
       raf = 0
-      restAt = performance.now()
       return
     }
     put(pos)
@@ -58,27 +62,17 @@ export function snapScroll(stops: () => number[], enabled: () => boolean): Snap 
     const st = stops()
     return (d > 0 ? st.filter((v) => v > from + 2) : st.filter((v) => v < from - 2).reverse())[0] ?? null
   }
+  const busy = () => target !== null || performance.now() - stepAt < HOLD
 
   const go = (d: number) => {
-    if (target !== null) {
-      // Same way: one stop past the current target, at most two ahead of us.
-      // The other way: the nearest stop behind us.
-      const t = beyond(d === dir ? target : pos, d)
-      if (t === null) return true
-      const lead = stops().filter((v) => (d > 0 ? v > pos + 2 && v <= t : v < pos - 2 && v >= t)).length
-      if (d === dir && lead > 2) return true
-      target = t
-      dir = d
-      stepAt = performance.now()
-      return true
-    }
+    // A step is playing: this input is spent on it.
+    if (busy()) return true
     if (!inside(scrollY)) return false
     const t = beyond(scrollY, d)
     if (t === null) return false
     pos = scrollY
     vel = 0
     target = t
-    dir = d
     stepAt = last = performance.now()
     raf = requestAnimationFrame(tick)
     return true
@@ -88,42 +82,29 @@ export function snapScroll(stops: () => number[], enabled: () => boolean): Snap 
     if (!enabled() || e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return
     const now = performance.now()
     const d = Math.sign(e.deltaY)
-    const mag = Math.abs(e.deltaY) * (e.deltaMode === 1 ? 32 : 1)
-    const gap = now - wheelAt
-    // A new push rather than the tail of the last one: after a pause, a
-    // clearly stronger delta once the last step has had time to decay, or
-    // another mouse-wheel notch.
-    const since = now - stepAt
-    const fresh = gap > 120 || (since > 300 && mag > wheelMag * 1.4 + 4) || (mag >= 100 && gap > 40 && since > 150)
+    if (now - wheelAt > QUIET) {
+      spent = false
+      native = false
+      acc = 0
+    }
     wheelAt = now
-    wheelMag = mag
-    if (target !== null) {
-      e.preventDefault()
-      if (d !== dir || fresh) go(d)
+    if (native) return
+    if (spent || busy()) {
+      spent = true
+      if (inside(scrollY) || target !== null) e.preventDefault()
       return
     }
-    // Let a gesture the page is already scrolling natively run its course.
-    if (now - nativeAt < 160) {
-      nativeAt = now
-      return
-    }
-    // The momentum tail of a glide that just settled.
-    if (now - restAt < 200 && !fresh) {
-      if (inside(scrollY)) {
-        e.preventDefault()
-        restAt = now
-      }
-      return
-    }
+    // Outside the stops, or at the end heading out: the page scrolls, for
+    // the whole of this gesture.
     if (!inside(scrollY) || beyond(scrollY, d) === null) {
-      nativeAt = now
+      native = true
       return
     }
     e.preventDefault()
-    if (Math.sign(acc) !== d || gap > 200) acc = 0
-    acc += mag * d
+    if (Math.sign(acc) !== d) acc = 0
+    acc += Math.abs(e.deltaY) * (e.deltaMode === 1 ? 32 : 1) * d
     if (Math.abs(acc) > 30) {
-      acc = 0
+      spent = true
       go(d)
     }
   }
@@ -158,11 +139,11 @@ export function snapScroll(stops: () => number[], enabled: () => boolean): Snap 
       (e.key === ' ' && el.closest('button, a'))
     )
       return
-    if (go(e.shiftKey && e.key === ' ' ? -1 : d)) e.preventDefault()
+    // A held key doesn't run through the steps.
+    if (e.repeat ? inside(scrollY) : go(e.shiftKey && e.key === ' ' ? -1 : d)) e.preventDefault()
   }
 
-  // Coming to rest between stops (a native gesture, a scrollbar drag) settles
-  // onto the next stop the way you were going.
+  // Coming to rest between stops settles onto the next stop the way you were going.
   const onScroll = () => {
     const y = scrollY
     if (y !== lastY) lastDir = Math.sign(y - lastY)
@@ -172,6 +153,7 @@ export function snapScroll(stops: () => number[], enabled: () => boolean): Snap 
     settle = window.setTimeout(() => {
       if (target !== null || !enabled() || !inside(scrollY)) return
       if (stops().some((v) => Math.abs(v - scrollY) <= 2)) return
+      stepAt = -Infinity
       go(lastDir)
     }, 250)
   }

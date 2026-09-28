@@ -314,6 +314,7 @@ export function mountStory(root: HTMLElement) {
   let dn: Arc | null = null
   let queued = 0
   let srvHit = 0
+  let handling = -1 // seconds the server has been handling an event, -1 = idle
   let brwHit = 0
   let chipT = 9
   let lane = 0
@@ -355,19 +356,28 @@ export function mountStory(root: HTMLElement) {
     el.classList.add(cls)
   }
   const send = () => {
-    up = { t: 0, lane, i: 1 }
+    up = { t: 0, lane, i: 0.75 }
     // Stateless: the event carries its signed state along to the nearest edge.
     setText(chipText, edge > 0.5 ? '@click + state' : '@click')
     sentTo = Math.max(0, near)
     chipT = 0
   }
+  // The server takes the event: on the server card the @click line lights
+  // first, then (handled) the state line changes and the patch goes down.
+  // At the edge it's handled at once.
   const onServer = () => {
+    srvHit = 0.35
+    if (edge < 0.5) {
+      flash(srvEl, 'click')
+      handling = 0
+    } else handled()
+  }
+  const handled = () => {
     count++
     setText(serverCount, String(count))
     if (edge < 0.5) flash(srvEl, 'hit')
     else flash(beacons[sentTo], 'hit')
-    srvHit = 1
-    dn = { t: -0.02, lane: up?.lane ?? lane, i: 1 }
+    dn = { t: -0.02, lane: up?.lane ?? lane, i: 0.75 }
   }
   const onBrowser = () => {
     setText(browserCount, String(count))
@@ -375,7 +385,7 @@ export function mountStory(root: HTMLElement) {
     setText(chipText, `patch "${count}"`)
     chipT = 0
     // Quieter at the edge: the count patches without the window lighting up.
-    if (edge < 0.5) brwHit = 1
+    if (edge < 0.5) brwHit = 0.35
   }
 
   // The edge beat on the map (in map units): you, the edge nearest you, and
@@ -408,7 +418,7 @@ export function mountStory(root: HTMLElement) {
     // Packet: out along the link, then the patch back.
     let f = -1
     let o = 0
-    if (dn && dn.t >= 0 && dn.i > 0.9) {
+    if (dn && dn.t >= 0 && dn.i > 0.6) {
       f = 1 - Math.min(1, dn.t / HOP)
       o = clamp01(1 - (dn.t - HOP) * 8)
     } else if (up) {
@@ -558,11 +568,11 @@ export function mountStory(root: HTMLElement) {
           ping -= dt
           if (ping <= 0 && !up && !dn && queued === 0) {
             lane = LANES[(LANES.indexOf(lane) + 1) % 3]
-            dn = { t: 0, lane, i: 0.55 }
+            dn = { t: 0, lane, i: 0.4 }
             ping = 0.8
           }
         } else lane = 0
-        if (queued > 0 && !up && !(dn && dn.i > 0.9)) {
+        if (queued > 0 && !up && handling < 0 && !(dn && dn.i > 0.6)) {
           queued--
           send()
         }
@@ -605,8 +615,15 @@ export function mountStory(root: HTMLElement) {
       if (dn) {
         const before = dn.t
         dn.t += dt
-        if (before < hop && dn.t >= hop && dn.i > 0.9) onBrowser()
+        if (before < hop && dn.t >= hop && dn.i > 0.6) onBrowser()
         if (dn.t > 0.4) dn = null
+      }
+      if (handling >= 0) {
+        handling += dt
+        if (handling >= 0.35) {
+          handling = -1
+          handled()
+        }
       }
       srvHit = Math.max(0, srvHit - dt * 2.2)
       brwHit = Math.max(0, brwHit - dt * 2.2)

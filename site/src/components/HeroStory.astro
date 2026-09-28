@@ -27,6 +27,7 @@ const counterHtml = highlighter.codeToHtml(counterCode, {
     {
       line(node, line) {
         if (line === 2) this.addClassToHast(node, 'srv-state')
+        if (line === 5) this.addClassToHast(node, 'srv-click')
       },
       span(node, line) {
         const child = node.children[0]
@@ -391,20 +392,25 @@ const landPath = WORLD.flatMap((row, r) =>
     color: var(--shiki-dark) !important;
   }
 
-  .srv-code :global(.srv-state) {
+  .srv-code :global(.srv-state),
+  .srv-code :global(.srv-click) {
     display: inline-block;
     margin: 0 -12px;
     padding: 0 12px;
     width: calc(100% + 24px);
   }
 
+  // An event lands on the @click line, then the state line changes.
+  .srv:global(.click) .srv-code :global(.srv-click),
   .srv:global(.hit) .srv-code :global(.srv-state) {
-    animation: line-hit 0.5s ease-out;
+    animation: line-hit 0.9s ease-out;
   }
 
+  // Holds a moment so the order reads, then fades.
   @keyframes line-hit {
-    from {
-      background: color-mix(in oklch, var(--accent-color) 28%, transparent);
+    0%,
+    35% {
+      background: color-mix(in oklch, var(--accent-color) 20%, transparent);
     }
   }
 
@@ -720,7 +726,7 @@ const landPath = WORLD.flatMap((row, r) =>
 
     // After the scripted demo, invite the visitor to take over.
     &:global(.your-turn) {
-      animation: your-turn 1.6s ease-out infinite;
+      animation: your-turn 2.4s ease-out infinite;
     }
   }
 
@@ -731,7 +737,7 @@ const landPath = WORLD.flatMap((row, r) =>
 
   @keyframes your-turn {
     from {
-      box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent-color) 55%, transparent);
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent-color) 35%, transparent);
     }
 
     to {
