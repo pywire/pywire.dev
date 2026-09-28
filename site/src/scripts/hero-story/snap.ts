@@ -1,16 +1,17 @@
 // Snap scrolling for a pinned scroll story, one step per gesture. Between the
 // first and last stop, a scroll gesture (a wheel or trackpad swipe, a touch
 // swipe, an arrow key) glides to the next stop on a critically damped spring.
-// While a step plays, input is ignored, and the rest of the gesture that took
-// it (a trackpad's momentum, a spun wheel) is swallowed, so however fast you
-// scroll you see every step, one at a time. Past the ends the page scrolls
+// For a moment after a step starts, input is ignored, and the rest of the
+// gesture that took it (a trackpad's momentum, a spun wheel) is swallowed, so
+// however fast you scroll you see every step, one at a time; a new gesture
+// after that carries on from the stop the glide is heading to. Past the ends the page scrolls
 // natively; a gesture that starts at the last stop heading out simply scrolls
 // the page. If the page comes to rest between stops (a scrollbar drag, a
 // native gesture that ran into the story), it settles onto the next stop.
 
 const RATE = 9 // spring rate: a glide settles in about 0.7 s
-const HOLD = 850 // ms after a step starts before another can
-const QUIET = 160 // ms without wheel events that ends a gesture
+const HOLD = 560 // ms after a step starts before another can
+const QUIET = 120 // ms without wheel events that ends a gesture
 const KEYS: Record<string, number> = { ArrowDown: 1, PageDown: 1, ' ': 1, ArrowUp: -1, PageUp: -1 }
 
 export interface Snap {
@@ -62,11 +63,19 @@ export function snapScroll(stops: () => number[], enabled: () => boolean): Snap 
     const st = stops()
     return (d > 0 ? st.filter((v) => v > from + 2) : st.filter((v) => v < from - 2).reverse())[0] ?? null
   }
-  const busy = () => target !== null || performance.now() - stepAt < HOLD
+  const busy = () => performance.now() - stepAt < HOLD
 
   const go = (d: number) => {
     // A step is playing: this input is spent on it.
     if (busy()) return true
+    // The last glide is nearly home: carry on from its stop.
+    if (target !== null) {
+      const t = beyond(target, d)
+      if (t === null) return true
+      target = t
+      stepAt = performance.now()
+      return true
+    }
     if (!inside(scrollY)) return false
     const t = beyond(scrollY, d)
     if (t === null) return false
