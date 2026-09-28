@@ -1,0 +1,1024 @@
+---
+import DefaultLayout from '@layouts/DefaultLayout.astro'
+import { Icon } from 'astro-icon/components'
+
+/**
+ * Roadmap: principles, what's shipped, Now / Next / Later lanes and the 1.0 bar.
+ * Source of truth for the content: the roadmap thread's working file. Keep issue
+ * links current when items land.
+ */
+---
+
+<DefaultLayout
+  title="Roadmap"
+  description="Where pywire is heading: what guides it, what's shipped, and what comes Now, Next and Later on the way to 1.0."
+>
+  <div class="roadmap-page">
+    <section class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Roadmap</p>
+        <h1>Where the <span>wire</span> runs next</h1>
+        <p class="lede">
+          pywire is heading to 1.0: a stable API you can build a business on, and everything a production SaaS needs
+          without a heavy JavaScript frontend. Here's the route, in the order it gets built. Until 1.0, expect breaking
+          changes between minor versions.
+        </p>
+        <div class="legend">
+          <span><i class="node now" aria-hidden="true"></i>Now: being built</span>
+          <span><i class="node next" aria-hidden="true"></i>Next: planned</span>
+          <span><i class="node later" aria-hidden="true"></i>Later: toward 1.0 and beyond</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="principles" aria-labelledby="principles-h">
+      <div class="wrap">
+        <h2 class="eyebrow" id="principles-h">What guides it</h2>
+        <dl>
+          <div><dt>Built for agents</dt><dd>Docs, tests and tooling made for agentic coding.</dd></div>
+          <div>
+            <dt>Scales by design</dt><dd>Sessions shared across workers, restored on reconnect, minimal diffs.</dd>
+          </div>
+          <div><dt>Built for SaaS</dt><dd>Real products without a heavy JavaScript frontend.</dd></div>
+          <div>
+            <dt>Small core, official add-ons</dt><dd>Batteries you opt into, maintained alongside the core.</dd>
+          </div>
+          <div><dt>Server and edge are equals</dt><dd>Long-running servers and serverless, same code.</dd></div>
+          <div><dt>Real-time is core</dt><dd>Shared state, presence and rooms ship in 1.0.</dd></div>
+          <div><dt>WebTransport ready</dt><dd>Built in, switched on as the server stack catches up.</dd></div>
+          <div><dt>Open source</dt><dd>Apache 2.0, backed by sponsors.</dd></div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="shipped" aria-labelledby="shipped-h">
+      <div class="wrap">
+        <h2 class="eyebrow" id="shipped-h">Already shipped</h2>
+        <ul>
+          <li><a href="/docs/concepts/reactivity/">Signals and <code>.wire</code> components</a></li>
+          <li><a href="/docs/guides/routing/">File routing and layouts</a></li>
+          <li><a href="/docs/guides/authentication/">Auth with OIDC and a local IdP</a></li>
+          <li><a href="/docs/guides/scaling/">Redis and Valkey sessions</a></li>
+          <li><a href="/docs/guides/deployment/">Deploys to Docker, Fly, Render, Railway and Cloudflare</a></li>
+          <li><a href="/docs/guides/framework-integration/">Mounting in FastAPI</a></li>
+          <li><a href="/docs/guides/editor-setup/">Language server and VS Code</a></li>
+          <li><a href="/docs/guides/cli/"><code>pywire check</code> and the CLI</a></li>
+        </ul>
+      </div>
+    </section>
+
+    <div class="lanes wrap">
+      <section class="lane" aria-labelledby="now-h">
+        <div class="lane-head">
+          <i class="node now" aria-hidden="true"></i>
+          <h2 id="now-h">Now</h2>
+          <p class="sum">Make what already exists trustworthy. Your first real app shouldn't hit a framework bug.</p>
+          <p class="top3">
+            <strong>First up:</strong> components in loops, shared state for every user, and edge mode. Cards are in priority
+            order.
+          </p>
+        </div>
+        <ul class="items">
+          <li class="item">
+            <h3>Components that behave</h3><p>
+              Components inside <code>$for</code> get their own instance, <code>props</code> work in functions defined in
+              a component's frontmatter, and child-to-parent callbacks get documented. Plus two fixes from the benchmark run.
+            </p><div class="meta">
+              <a class="ref" aria-label="Issue 290" href="https://github.com/pywire/pywire/issues/290" rel="external"
+                >#290</a
+              ><a class="ref" aria-label="Issue 297" href="https://github.com/pywire/pywire/issues/297" rel="external"
+                >#297</a
+              ><a
+                class="ref"
+                href="https://github.com/pywire/pywire/issues/332"
+                rel="external"
+                aria-label="Issue 332: @input handler example fails">#332</a
+              ><a
+                class="ref"
+                href="https://github.com/pywire/pywire/issues/333"
+                rel="external"
+                aria-label="Issue 333: query variable overwritten on edge">#333</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Shared state reaches everyone</h3><p>
+              A change to a shared <code>wire()</code> or <code>producer()</code> reaches every connected client, across workers.
+              In-process by default, Redis when <code>REDIS_URL</code> is set. Until it lands, the docs say exactly what is
+              shared.
+            </p><div class="meta">
+              <a class="ref" aria-label="Issue 284" href="https://github.com/pywire/pywire/issues/284" rel="external"
+                >#284</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Edge stateless mode</h3><p>
+              Run on Cloudflare Workers, AWS Lambda, Azure Functions and Google Cloud with signed state snapshots. It
+              also brings keyed <code>&#123;$for&#125;</code> regions to every tier, so a one-row change on a 5,000-row list
+              sends one row over WebSocket (304 B instead of 913 KB), plus optimistic UI and <code>@poll</code>. What
+              differs between tiers goes in a published capability table.
+            </p><div class="meta">
+              <span class="status">In a pull request</span><a
+                class="ref"
+                aria-label="Pull request 282"
+                href="https://github.com/pywire/pywire/pull/282"
+                rel="external">#282</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Faster by default</h3><p>
+              Lighter session saves per event, compressed stateless snapshots, gzip and Brotli responses, and published
+              benchmarks for the default WebSocket mode.
+            </p><div class="meta">
+              <a
+                class="ref"
+                href="https://github.com/pywire/pywire/issues/328"
+                rel="external"
+                aria-label="Issue 328: per-event session save">#328</a
+              ><a
+                class="ref"
+                href="https://github.com/pywire/pywire/issues/329"
+                rel="external"
+                aria-label="Issue 329: stateless snapshot size">#329</a
+              ><a
+                class="ref"
+                href="https://github.com/pywire/pywire/issues/330"
+                rel="external"
+                aria-label="Issue 330: edge list memory">#330</a
+              ><a
+                class="ref"
+                href="https://github.com/pywire/pywire/issues/331"
+                rel="external"
+                aria-label="Issue 331: compression">#331</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Production add-ons</h3><p>
+              <code>pywire-secure</code> for CSRF, security headers and rate limits. <code>pywire.testing</code> for testing
+              pages. <code>pywire-observability</code> for request IDs, JSON logs, OpenTelemetry and Sentry.
+            </p><div class="meta">
+              <span class="status">In pull requests</span><a
+                class="ref"
+                aria-label="Pull request 261"
+                href="https://github.com/pywire/pywire/pull/261"
+                rel="external">#261</a
+              ><a
+                class="ref"
+                aria-label="Pull request 262"
+                href="https://github.com/pywire/pywire/pull/262"
+                rel="external">#262</a
+              ><a
+                class="ref"
+                aria-label="Pull request 263"
+                href="https://github.com/pywire/pywire/pull/263"
+                rel="external">#263</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>A tighter dev loop</h3><p>
+              Reload on any change under <code>src/</code>, new pages without a restart, and the full traceback when a
+              page fails on first render.
+            </p><div class="meta">
+              <a class="ref" aria-label="Issue 287" href="https://github.com/pywire/pywire/issues/287" rel="external"
+                >#287</a
+              ><a class="ref" aria-label="Issue 298" href="https://github.com/pywire/pywire/issues/298" rel="external"
+                >#298</a
+              ><a class="ref" aria-label="Issue 300" href="https://github.com/pywire/pywire/issues/300" rel="external"
+                >#300</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>FastAPI, first class</h3><p>
+              Mounting pywire in FastAPI already works (<a href="/docs/guides/framework-integration/">guide</a>). Next:
+              dependency injection and auth shared with your FastAPI routes, and the rough edges smoothed out.
+            </p>
+          </li>
+          <li class="item">
+            <h3><code>pywire check</code> knows the classic mistakes</h3><p>
+              Static checks for the template and handler pitfalls people actually hit, reported in the terminal and in
+              your editor.
+            </p><div class="meta">
+              <a class="ref" aria-label="Issue 301" href="https://github.com/pywire/pywire/issues/301" rel="external"
+                >#301</a
+              >
+            </div>
+          </li>
+        </ul>
+      </section>
+
+      <section class="lane" aria-labelledby="next-h">
+        <div class="lane-head">
+          <i class="node next" aria-hidden="true"></i>
+          <h2 id="next-h">Next</h2>
+          <p class="sum">Everything a SaaS needs, from live data to deploys from CI.</p>
+        </div>
+        <ul class="items">
+          <li class="item">
+            <h3>Real-time between users</h3><p>
+              Rooms and channels for chat, presence and collaborative views, plus server-sent events for streaming on
+              the stateless tier.
+            </p>
+          </li>
+          <li class="item">
+            <h3>Live data with <code>pywire-db</code></h3><p>
+              Queries that re-render every page showing them when the data changes, in every worker. SQLAlchemy and
+              SQLModel first, the Django ORM later, and <code>invalidate()</code> for raw SQL.
+            </p>
+          </li>
+          <li class="item">
+            <h3>Forms, done properly</h3><p>
+              Typed form refs, declarative validation that reconciles HTML5 and Pydantic, sensible debounce defaults,
+              and file uploads documented as a feature.
+            </p><div class="meta">
+              <a class="ref" aria-label="Issue 19" href="https://github.com/pywire/pywire/issues/19" rel="external"
+                >#19</a
+              ><a class="ref" aria-label="Issue 17" href="https://github.com/pywire/pywire/issues/17" rel="external"
+                >#17</a
+              ><a class="ref" aria-label="Issue 11" href="https://github.com/pywire/pywire/issues/11" rel="external"
+                >#11</a
+              ><a class="ref" aria-label="Issue 16" href="https://github.com/pywire/pywire/issues/16" rel="external"
+                >#16</a
+              ><a class="ref" aria-label="Issue 15" href="https://github.com/pywire/pywire/issues/15" rel="external"
+                >#15</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Docs and examples for coding agents</h3><p>
+              An <code>AGENTS.md</code> in every new app, an agent skill for building with pywire, guides on structuring complex
+              apps, and reference apps that show the patterns.
+            </p>
+          </li>
+          <li class="item">
+            <h3>A real SaaS starter</h3><p>
+              The <code>saas</code> template grows into a reference app with auth, teams, settings, billing hooks and email.
+            </p>
+          </li>
+          <li class="item">
+            <h3>Deploy from CI</h3><p>
+              <code>pywire deploy</code> reads config from the environment, prints <code>--json</code> and returns meaningful
+              exit codes.
+            </p><div class="meta">
+              <a
+                class="ref"
+                aria-label="Discussion 283"
+                href="https://github.com/pywire/pywire/discussions/283"
+                rel="external">Discussion #283</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Testing, fuller</h3><p>
+              A test client over a real WebSocket, <code>client.login()</code>, events fired from CSS selectors, HTML
+              snapshots, and fixtures loaded from <code>.wire</code> files.
+            </p><div class="meta">
+              <a class="ref" href="https://github.com/pywire/pywire/issues/249" rel="external" aria-label="Issue 249"
+                >#249</a
+              ><a class="ref" href="https://github.com/pywire/pywire/issues/250" rel="external" aria-label="Issue 250"
+                >#250</a
+              ><a class="ref" href="https://github.com/pywire/pywire/issues/251" rel="external" aria-label="Issue 251"
+                >#251</a
+              ><a class="ref" href="https://github.com/pywire/pywire/issues/252" rel="external" aria-label="Issue 252"
+                >#252</a
+              ><a class="ref" href="https://github.com/pywire/pywire/issues/253" rel="external" aria-label="Issue 253"
+                >#253</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Observability, deeper</h3><p>
+              An OpenTelemetry span per event, a metrics endpoint, and traces that survive reconnects.
+            </p><div class="meta">
+              <a class="ref" href="https://github.com/pywire/pywire/issues/254" rel="external" aria-label="Issue 254"
+                >#254</a
+              ><a class="ref" href="https://github.com/pywire/pywire/issues/255" rel="external" aria-label="Issue 255"
+                >#255</a
+              ><a class="ref" href="https://github.com/pywire/pywire/issues/256" rel="external" aria-label="Issue 256"
+                >#256</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Editors that know your components</h3><p>
+              Prop completion, go-to-definition on component tags, and quick fixes from <code>pywire check --fix</code>.
+            </p>
+          </li>
+          <li class="item">
+            <h3>WebTransport in production</h3><p>
+              pywire's WebTransport transport is built, with automatic fallback to WebSocket. It turns on by default as
+              Hypercorn and Starlette finish HTTP/3 support and hosts forward WebTransport to your app, with middleware
+              applied the same as over WebSocket.
+            </p>
+          </li>
+          <li class="item">
+            <h3>Flask and Django</h3><p>Guides for mounting pywire inside an existing Flask or Django app.</p>
+          </li>
+          <li class="item">
+            <h3>Community</h3><p>A contributor guide, good first issues, a Discord, and RFCs in GitHub Discussions.</p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="lane" aria-labelledby="later-h">
+        <div class="lane-head">
+          <i class="node later" aria-hidden="true"></i>
+          <h2 id="later-h">Later</h2>
+          <p class="sum">The run-up to 1.0, and a few ideas past it.</p>
+        </div>
+        <ul class="items">
+          <li class="item">
+            <h3>A stability promise</h3><p>
+              Semantic versioning, a deprecation window and a documented public API. Until then, pywire takes clean
+              breaks over compatibility shims.
+            </p>
+          </li>
+          <li class="item">
+            <span class="status after">After 1.0</span><h3>Polyglot islands</h3><p>
+              Drop a React, Svelte or Vue component, or a web component, into a page. <code>pywire build</code> either runs
+              the whole build or plugs into the one you have.
+            </p><div class="meta">
+              <a
+                class="ref"
+                aria-label="Discussion 28"
+                href="https://github.com/pywire/pywire/discussions/28"
+                rel="external">Discussion #28</a
+              ><a
+                class="ref"
+                aria-label="Discussion 29"
+                href="https://github.com/pywire/pywire/discussions/29"
+                rel="external">Discussion #29</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <span class="status after">After 1.0</span><h3>An agent UI add-on</h3><p>
+              An official add-on for building AI features into your app: a chat panel whose agent can read the page,
+              fill forms and click through flows with the user's permission, and rearrange the layout when asked.
+            </p>
+          </li>
+          <li class="item">
+            <h3>A plugin API</h3><p>
+              Custom directives and hooks, turning today's <code>connect_*</code> pattern into a supported extension point.
+            </p><div class="meta">
+              <a
+                class="ref"
+                aria-label="Discussion 25"
+                href="https://github.com/pywire/pywire/discussions/25"
+                rel="external">Discussion #25</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>Faster builds and pages</h3><p>
+              Pages with nothing interactive prerendered at build time, image optimization, and constant folding in the
+              compiler.
+            </p><div class="meta">
+              <a
+                class="ref"
+                aria-label="Discussion 27"
+                href="https://github.com/pywire/pywire/discussions/27"
+                rel="external">Discussion #27</a
+              ><a class="ref" aria-label="Issue 154" href="https://github.com/pywire/pywire/issues/154" rel="external"
+                >#154</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>A profiler</h3><p>Time and memory for every lifecycle phase of a page, in the dev tools.</p><div
+              class="meta"
+            >
+              <a class="ref" aria-label="Issue 13" href="https://github.com/pywire/pywire/issues/13" rel="external"
+                >#13</a
+              >
+            </div>
+          </li>
+          <li class="item">
+            <h3>More editors</h3><p>
+              JetBrains, Neovim and Zed setups on top of the language server and tree-sitter grammar.
+            </p>
+          </li>
+          <li class="item far">
+            <span class="status after">After 1.0</span><h3>Desktop and mobile apps</h3><p>
+              Native desktop and mobile apps from the same <code>.wire</code> code, growing out of the pywire-shell prototype.
+            </p>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <section class="one" aria-labelledby="one-h">
+      <div class="wrap">
+        <div class="panel">
+          <div class="intro">
+            <p class="eyebrow">Version 1.0</p>
+            <h2 id="one-h">What 1.0 means</h2>
+            <p>
+              Two promises at once: an API that won't break under you, and a framework you can run a real product on.
+            </p>
+          </div>
+          <ul class="checks">
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>No open correctness bugs in
+              components, reactivity or forms
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>Every core feature works on
+              server and edge, with a published capability table
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>Auth, security, testing and
+              observability add-ons at 1.0 alongside the core
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>Real-time between users: shared
+              state, presence and rooms
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>Live data queries and a settled
+              FastAPI integration
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>A published stability policy,
+              with docs and tutorial that match the API exactly
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>A reference SaaS app built on
+              pywire
+            </li>
+            <li>
+              <span class="tick" aria-hidden="true"><Icon name="lucide:check" /></span>A handful of regular contributors
+              beyond the maintainer
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="wrap two">
+      <section class="card" aria-labelledby="how-h">
+        <p class="eyebrow">How it gets built</p>
+        <h2 id="how-h">One maintainer, a lot of agents</h2>
+        <p>
+          pywire has one maintainer, and AI coding agents write most of the code. Every change is reviewed by the
+          maintainer and has to pass CI, including unit, client and browser end-to-end tests, before it merges. Agents
+          are taking over routine fixes and speeding up feature work.
+        </p>
+      </section>
+      <section class="card" aria-labelledby="shape-h">
+        <p class="eyebrow">Get involved</p>
+        <h2 id="shape-h">Shape what comes next</h2>
+        <p>
+          The order on this page moves with what people build. Say what you need in GitHub Discussions, or support the
+          maintainer if pywire saves you time.
+        </p>
+        <div class="btns">
+          <a class="btn primary" href="https://github.com/pywire/pywire/discussions" rel="external"
+            >Join the discussion<Icon aria-hidden="true" name="lucide:arrow-right" /></a
+          >
+          <a class="btn ghost" href="https://ko-fi.com/reecelikesramen" rel="external">Support on Ko-fi</a>
+          <a class="btn ghost" href="https://github.com/sponsors/pywire" rel="external">Sponsor on GitHub</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</DefaultLayout>
+
+<style lang="scss" is:global>
+  .roadmap-page {
+    --rm-accent-strong: light-dark(oklch(48% 0.12 195), var(--color-wire-90));
+    --rm-wire-dim: light-dark(oklch(80% 0.05 195), oklch(45% 0.07 195));
+    --rm-btn-bg: light-dark(oklch(48% 0.12 195), var(--color-wire-90));
+    --rm-btn-bg-hover: light-dark(oklch(42% 0.11 195), oklch(94% 0.1 195));
+    --rm-btn-fg: light-dark(#fff, oklch(15% 0.04 195));
+    --rm-glow:
+      0 0 0 1px color-mix(in oklch, var(--accent-color) 30%, transparent),
+      0 8px 24px color-mix(in oklch, var(--accent-color) 12%, transparent);
+    --rm-gutter: clamp(1.125rem, 2.4vw, 2.5rem);
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-weight: 600;
+      text-wrap: balance;
+    }
+    p {
+      margin: 0;
+      text-wrap: pretty;
+    }
+    ul {
+      margin: 0;
+    }
+    code {
+      border-radius: var(--radius-s);
+      background: var(--accent-bg-color);
+      padding: 0.05em 0.35em;
+      color: var(--rm-accent-strong);
+      font-size: 0.86em;
+      font-family: var(--font-mono);
+      overflow-wrap: anywhere;
+    }
+    a:focus-visible {
+      outline: 3px solid var(--rm-accent-strong);
+      outline-offset: 2px;
+    }
+    .wrap {
+      margin-inline: auto;
+      padding-inline: var(--rm-gutter);
+      max-width: 1200px;
+    }
+    .eyebrow {
+      margin: 0;
+      color: var(--rm-accent-strong);
+      font-weight: 500;
+      font-size: 0.76rem;
+      font-family: var(--font-mono);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    [data-icon] {
+      flex: none;
+      width: 1em;
+      height: 1em;
+    }
+
+    /* hero */
+    .hero {
+      position: relative;
+      padding-block: clamp(3rem, 7vw, 5.5rem) clamp(2.5rem, 5vw, 4rem);
+      overflow: hidden;
+    }
+    .hero::before {
+      position: absolute;
+      z-index: -1;
+      -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent);
+      mask-image: linear-gradient(to bottom, #000 70%, transparent);
+      inset: 0;
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(var(--grid-line-strong) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line-strong) 1px, transparent 1px);
+      background-size:
+        32px 32px,
+        32px 32px,
+        128px 128px,
+        128px 128px;
+      pointer-events: none;
+      content: '';
+    }
+    .hero .wrap {
+      display: grid;
+      gap: 1.25rem;
+    }
+    .hero h1 {
+      max-width: 14ch;
+      font-weight: 700;
+      font-size: clamp(2.6rem, 1.6rem + 4.6vw, 4.6rem);
+      line-height: 1.03;
+      letter-spacing: -0.035em;
+    }
+    .hero h1 span {
+      color: var(--accent-color);
+      text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
+    }
+    .hero .lede {
+      max-width: 40rem;
+      color: var(--text-decoration-color);
+      font-size: clamp(1.05rem, 0.95rem + 0.45vw, 1.28rem);
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1.4rem;
+      margin-top: 0.5rem;
+      color: var(--text-decoration-color);
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* signal nodes */
+    .node {
+      display: inline-block;
+      flex: none;
+      border: 2px solid var(--accent-color);
+      border-radius: 50%;
+      background: var(--background-color);
+      width: 14px;
+      height: 14px;
+    }
+    .node.now {
+      box-shadow:
+        0 0 0 4px color-mix(in oklch, var(--accent-color) 18%, transparent),
+        0 0 14px color-mix(in oklch, var(--accent-color) 55%, transparent);
+      background: var(--accent-color);
+    }
+    .node.next {
+      background: color-mix(in oklch, var(--accent-color) 45%, var(--background-color));
+    }
+    .node.later {
+      border-style: dashed;
+      border-color: var(--rm-wire-dim);
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .lane-head .node.now {
+        animation: rm-pulse 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+      }
+    }
+
+    /* principles */
+    .principles {
+      padding-block: 1rem 3.5rem;
+    }
+    .principles dl {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 15.5rem), 1fr));
+      gap: 0;
+      margin: 1rem 0 0;
+      border-top: 1px solid var(--border-color);
+    }
+    .principles dl > div {
+      border-bottom: 1px solid var(--border-color-subtle);
+      padding: 1.1rem 1.25rem 1.2rem 0;
+    }
+    .principles dt {
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+    }
+    .principles dd {
+      margin: 0;
+      max-width: 34ch;
+      color: var(--text-decoration-color);
+      font-size: 0.95rem;
+    }
+
+    /* lanes */
+    .lanes {
+      position: relative;
+      padding-block: 1rem 2rem;
+    }
+    .lane {
+      display: grid;
+      position: relative;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+      padding-block: 2.25rem;
+    }
+    .lane + .lane {
+      border-top: 1px solid var(--border-color-subtle);
+    }
+    @media (min-width: 900px) {
+      .lane {
+        grid-template-columns: 17rem 1fr;
+        gap: 2.5rem;
+      }
+      .lane-head {
+        position: sticky;
+        top: 5.5rem;
+        align-self: start;
+      }
+      .lanes::before {
+        position: absolute;
+        top: 3.3rem;
+        bottom: 4rem;
+        left: calc(var(--rm-gutter) + 6px);
+        opacity: 0.55;
+        background: linear-gradient(
+          to bottom,
+          var(--accent-color) 0%,
+          var(--accent-color) 34%,
+          color-mix(in oklch, var(--accent-color) 45%, var(--background-color)) 34%,
+          color-mix(in oklch, var(--accent-color) 45%, var(--background-color)) 67%,
+          var(--rm-wire-dim) 67%
+        );
+        width: 2px;
+        content: '';
+      }
+      .lane-head {
+        padding-left: 0;
+      }
+    }
+    .lane-head {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      column-gap: 0.9rem;
+      row-gap: 0.35rem;
+      align-items: center;
+    }
+    .lane-head .node {
+      grid-row: 1;
+    }
+    .lane-head h2 {
+      font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
+      line-height: 1.1;
+      letter-spacing: -0.025em;
+    }
+    .lane-head .eyebrow {
+      grid-column: 2;
+    }
+    .lane-head p.sum {
+      grid-column: 1 / -1;
+      margin-top: 0.4rem;
+      max-width: 34ch;
+      color: var(--text-decoration-color);
+      font-size: 0.97rem;
+    }
+    @media (min-width: 900px) {
+      .lane-head p.sum,
+      .lane-head .top3 {
+        grid-column: 2;
+      }
+    }
+    .items {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+      gap: 0.9rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.55rem;
+      transition: border-color 0.12s cubic-bezier(0.1, 0.1, 0, 1);
+      border: 1px solid var(--border-color-subtle);
+      border-radius: var(--radius-l);
+      background: var(--surface-color);
+      padding: 1.2rem 1.3rem 1.25rem;
+      min-width: 0;
+      overflow-wrap: break-word;
+    }
+    .item:hover {
+      border-color: var(--accent-color);
+    }
+    .item h3 {
+      font-size: 1.06rem;
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+    }
+    .item p {
+      color: var(--text-decoration-color);
+      font-size: 0.94rem;
+      line-height: 1.55;
+    }
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: auto;
+      padding-top: 0.35rem;
+    }
+    .ref {
+      border: 1px solid var(--border-color-subtle);
+      border-radius: var(--radius-s);
+      background: var(--surface-2-color);
+      padding: 0.22rem 0.5rem;
+      color: var(--text-decoration-color);
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+      text-decoration: none;
+    }
+    a.ref:hover {
+      border-color: var(--accent-color);
+      color: var(--rm-accent-strong);
+    }
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border-radius: 999px;
+      background: var(--accent-bg-color);
+      padding: 0.22rem 0.55rem;
+      color: var(--rm-accent-strong);
+      font-size: 0.72rem;
+      font-family: var(--font-mono);
+    }
+    .status::before {
+      border-radius: 50%;
+      background: currentColor;
+      width: 6px;
+      height: 6px;
+      content: '';
+    }
+    .status.after {
+      align-self: flex-start;
+      background: var(--surface-2-color);
+      color: var(--text-decoration-color);
+    }
+    .item.far {
+      border-style: dashed;
+      background: transparent;
+    }
+
+    /* shipped */
+    .shipped {
+      padding-block: 0 3rem;
+    }
+    .shipped ul {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 1rem 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    .shipped a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid var(--border-color-subtle);
+      border-radius: 999px;
+      background: var(--surface-color);
+      padding: 0.45rem 0.8rem;
+      color: var(--foreground-color);
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+    .shipped a:hover {
+      border-color: var(--accent-color);
+      color: var(--rm-accent-strong);
+    }
+    .shipped a::before {
+      border-radius: 50%;
+      background: var(--accent-color);
+      width: 6px;
+      height: 6px;
+      content: '';
+    }
+    .top3 {
+      grid-column: 1 / -1;
+      margin-top: 0.9rem;
+      color: var(--text-decoration-color);
+      font-size: 0.9rem;
+    }
+    .top3 strong {
+      color: var(--foreground-color);
+      font-weight: 600;
+    }
+    h2.eyebrow {
+      font-weight: 500;
+    }
+    /* 1.0 */
+    .one {
+      padding-block: 3.5rem;
+    }
+    .one .panel {
+      display: grid;
+      gap: 1.75rem;
+      box-shadow: var(--rm-glow);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-l);
+      background: var(--surface-color);
+      padding: clamp(1.4rem, 3vw, 2.5rem);
+    }
+    @media (min-width: 900px) {
+      .one .panel {
+        grid-template-columns: 20rem 1fr;
+        gap: 3rem;
+      }
+    }
+    .one h2 {
+      margin-top: 0.5rem;
+      font-size: clamp(1.6rem, 1.3rem + 1vw, 2.1rem);
+      letter-spacing: -0.025em;
+    }
+    .one .intro p {
+      margin-top: 0.75rem;
+      max-width: 36ch;
+      color: var(--text-decoration-color);
+    }
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+      gap: 0.9rem 1.75rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    .checks li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      gap: 0.7rem;
+      font-size: 0.97rem;
+    }
+    .checks .tick {
+      display: grid;
+      place-items: center;
+      margin-top: 0.1rem;
+      border-radius: 6px;
+      background: var(--accent-bg-color);
+      width: 22px;
+      height: 22px;
+      color: var(--rm-accent-strong);
+      font-size: 14px;
+    }
+
+    /* how built + cta */
+    .two {
+      display: grid;
+      gap: 1rem;
+      padding-block: 1rem 4rem;
+    }
+    @media (min-width: 800px) {
+      .two {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    .card {
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+      border: 1px solid var(--border-color-subtle);
+      border-radius: var(--radius-l);
+      background: var(--background-color);
+      padding: clamp(1.3rem, 2.6vw, 2rem);
+    }
+    .card h2 {
+      font-size: 1.4rem;
+      letter-spacing: -0.02em;
+    }
+    .card p {
+      max-width: 52ch;
+      color: var(--text-decoration-color);
+    }
+    .btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.4rem;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1.5px solid var(--accent-color);
+      border-radius: var(--radius-m);
+      padding: 0.62rem 1.05rem;
+      font-weight: 500;
+      font-size: 0.95rem;
+      line-height: 1;
+      text-decoration: none;
+    }
+    .btn.primary {
+      box-shadow: 0 0 12px color-mix(in oklch, var(--accent-color) 30%, transparent);
+      border-color: var(--rm-btn-bg);
+      background: var(--rm-btn-bg);
+      color: var(--rm-btn-fg);
+    }
+    .btn.primary:hover {
+      border-color: var(--rm-btn-bg-hover);
+      background: var(--rm-btn-bg-hover);
+      color: var(--rm-btn-fg);
+    }
+    .btn.ghost {
+      border-color: var(--border-color);
+      color: var(--foreground-color);
+    }
+    .btn.ghost:hover {
+      background: var(--accent-bg-color);
+      color: var(--foreground-color);
+    }
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    footer {
+      border-top: 1px solid var(--border-color-subtle);
+      background: var(--surface-2-color);
+    }
+    footer .wrap {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding-block: 1.6rem;
+      color: var(--text-decoration-color);
+      font-size: 0.88rem;
+    }
+    .updated {
+      font-size: 0.78rem;
+      font-family: var(--font-mono);
+    }
+  }
+
+  @keyframes rm-pulse {
+    50% {
+      box-shadow:
+        0 0 0 7px color-mix(in oklch, var(--accent-color) 8%, transparent),
+        0 0 20px color-mix(in oklch, var(--accent-color) 70%, transparent);
+    }
+  }
+</style>
