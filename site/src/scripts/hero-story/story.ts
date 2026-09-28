@@ -522,7 +522,9 @@ export function mountStory(root: HTMLElement) {
     const brwOn = pace(1, ramp(s, 0.36, 0.1), 1.0, dt)
     const draw = pace(2, ramp(s, 0.4, 0.08), 0.7, dt)
     const stackVis = ramp(s, 0.4, 0.04)
-    const merge = pace(3, ramp(s, 0.47, 0.07), 1.0, dt)
+    // The old stack's routes hold a moment so their labels can be read, then
+    // ease into the one conduit.
+    const merge = ss(clamp01((pace(3, ramp(s, 0.47, 0.07), 2.2, dt) - 0.5) / 0.5))
     const tx = pace(4, ramp(s, 0.8, 0.06), 0.7, dt)
     const chipOn = 1 - ramp(s, 0.02, 0.09)
     edge = pace(5, ramp(sa, EDGE, 0.06), 1.2, dt)
@@ -620,7 +622,7 @@ export function mountStory(root: HTMLElement) {
       }
       if (handling >= 0) {
         handling += dt
-        if (handling >= 0.35) {
+        if (handling >= 0.16) {
           handling = -1
           handled()
         }
