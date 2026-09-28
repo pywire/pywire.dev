@@ -1,0 +1,80 @@
+---
+import { Icon } from 'astro-icon/components'
+
+/**
+ * ToTop Component
+ *
+ * @description A button in the bottom right that scrolls back to the top once the page is scrolled a screen down
+ */
+---
+
+<button class="to-top" type="button" aria-label="Scroll to top" title="Scroll to top">
+  <Icon aria-hidden="true" name="lucide:arrow-up" />
+</button>
+
+<script>
+  const button = () => document.querySelector('.to-top') as HTMLButtonElement | null
+  const update = () => {
+    const el = button()
+    if (!el) return
+    // On phones the story's own Next button sits along the bottom, so stay out
+    // of its way while the story is on screen.
+    const story = innerWidth < 800 && document.querySelector('[data-story]')?.getBoundingClientRect()
+    el.toggleAttribute('data-on', scrollY > innerHeight * 0.9 && !(story && story.bottom > innerHeight * 0.6))
+  }
+  addEventListener('scroll', update, { passive: true })
+  document.addEventListener('astro:page-load', () => {
+    update()
+    button()?.addEventListener('click', () => {
+      scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' })
+    })
+  })
+</script>
+
+<style lang="scss" is:global>
+  .to-top {
+    display: grid;
+    position: fixed;
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(20px, calc(env(safe-area-inset-bottom) + 12px));
+    place-items: center;
+    visibility: hidden;
+    opacity: 0;
+    z-index: 90;
+    backdrop-filter: blur(8px);
+    transition:
+      opacity 0.25s,
+      visibility 0.25s,
+      border-color var(--animation-speed-fast) var(--cubic-bezier),
+      color var(--animation-speed-fast) var(--cubic-bezier);
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    background-color: light-dark(rgba(255, 255, 255, 0.8), rgba(9, 10, 17, 0.8));
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    color: var(--foreground-color);
+
+    &[data-on] {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    &:hover,
+    &:focus-visible {
+      border-color: var(--accent-color);
+      color: var(--accent-color);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 2px color-mix(in oklch, var(--accent-color) 35%, transparent);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+</style>
