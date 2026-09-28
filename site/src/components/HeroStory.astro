@@ -1,0 +1,1044 @@
+---
+import { Link } from 'accessible-astro-components'
+import { Icon } from 'astro-icon/components'
+
+import { createHighlighter } from 'shiki'
+import PywireMark from '../assets/img/pywire-mark.svg'
+import { EDGES, MAP_H, MAP_W, WORLD, project } from '../scripts/hero-story/world'
+import pywireGrammar from '../../public/grammars/pywire.tmLanguage.json'
+
+// counter.wire for the server card, highlighted with the real .wire grammar in
+// both catppuccin themes. The state line and its value are tagged so the story
+// can flash the line and update the number live.
+const highlighter = await createHighlighter({
+  themes: ['catppuccin-latte', 'catppuccin-mocha'],
+  langs: ['python', { ...pywireGrammar, name: 'pywire' } as any],
+})
+const counterCode = `---
+count = wire(0)
+---
+<p>Count: {count}</p>
+<button @click={count += 1}>`
+const counterHtml = highlighter.codeToHtml(counterCode, {
+  lang: 'pywire',
+  themes: { light: 'catppuccin-latte', dark: 'catppuccin-mocha' },
+  defaultColor: 'light',
+  transformers: [
+    {
+      line(node, line) {
+        if (line === 2) this.addClassToHast(node, 'srv-state')
+        if (line === 5) this.addClassToHast(node, 'srv-click')
+      },
+      span(node, line) {
+        const child = node.children[0]
+        if (line === 2 && child?.type === 'text' && child.value === '0') node.properties['data-count'] = 'server'
+      },
+    },
+  ],
+})
+
+// The edge beat's world map: one round-capped zero-length stroke per land dot.
+const landPath = WORLD.flatMap((row, r) =>
+  [...row].flatMap((c, i) => (c === '#' ? [`M${i * 3 + 1.5} ${r * 3 + 1.5}h0`] : [])),
+).join('')
+
+/**
+ * HeroStory — "the live conduit": a pinned scroll story over a WebGL circuit
+ * grid, grown from the design system's camera-story exploration.
+ *
+ * The hero, then four beats (Python, conduit, patch, transport) while the
+ * camera frames a server card and a browser window. The browser's counter is
+ * live: a scripted demo clicks it three times, then it's the visitor's turn.
+ * The section after it should overlap the last screen (see `.story-after`).
+ */
+---
+
+<section class="story" data-story aria-labelledby="hero-title">
+  <div class="stage">
+    <canvas aria-hidden="true"></canvas>
+    <i class="dvh" data-dvh aria-hidden="true"></i>
+    <div class="world" data-world>
+      <div class="core" data-ov="core" aria-hidden="true">
+        <PywireMark class="core-mark" preserveAspectRatio="xMidYMid meet" width="100%" height="100%" />
+      </div>
+      <div class="srv" data-ov="server" aria-hidden="true">
+        <div class="win-bar">
+          <span class="srv-led"></span>
+          <span class="win-title">counter.wire</span>
+          <span class="win-tag">server</span>
+        </div>
+        <div class="srv-code" set:html={counterHtml} />
+      </div>
+      <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">REST API</span></span>
+      <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">JSON</span></span>
+      <span class="ov" data-ov="stack" aria-hidden="true"><span class="lbl lbl-stack">client store</span></span>
+      <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebSocket</span></span>
+      <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">WebTransport</span></span>
+      <span class="ov" data-ov="tx" aria-hidden="true"><span class="lbl lbl-tx">HTTP long polling</span></span>
+      <svg class="map" data-ov="map" viewBox={`0 0 ${MAP_W} ${MAP_H}`} aria-hidden="true">
+        <path class="map-land" d={landPath}></path>
+        <line class="map-link" data-link x1="0" y1="0" x2="0" y2="0"></line>
+        {
+          EDGES.map(([code, lon, lat]) => {
+            const [x, y] = project(lon, lat)
+            return (
+              <g transform={`translate(${x} ${y})`}>
+                <g class="beacon" data-beacon>
+                  <circle class="b-ping" r="3.6" />
+                  <circle class="b-ring" r="3.6" />
+                  <circle class="b-core" r="1.5" />
+                  <text y="-5.6">{code}</text>
+                </g>
+              </g>
+            )
+          })
+        }
+        <circle class="map-packet" data-packet r="1.3"></circle>
+        <g data-you>
+          <g class="you">
+            <circle class="you-ring" r="3"></circle>
+            <circle class="you-core" r="1.4"></circle>
+            <text y="8">you</text>
+          </g>
+        </g>
+      </svg>
+      <span class="ov" data-ov="chip" aria-hidden="true"><code class="wchip" data-chip-text>@click</code></span>
+      <div class="brw" data-ov="browser" role="group" aria-label="Live counter demo" inert>
+        <div class="win-bar" aria-hidden="true">
+          <i></i><i></i><i></i>
+          <span class="brw-url">localhost:8000</span>
+          <span class="win-tag">browser</span>
+        </div>
+        <div class="brw-body">
+          <div class="brw-skel" aria-hidden="true"><i></i><i></i></div>
+          <p class="brw-count">Count: <span data-count="browser">0</span></p>
+          <div class="brw-act">
+            <button type="button" class="card-btn" data-add disabled>Add one</button>
+            <span class="ghost" data-ghost aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20"
+                ><path d="M4 3l7 17 2.5-7L21 10.5z" stroke-linejoin="round" stroke-width="1.5"></path></svg
+              >
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="copy step on" data-step>
+      <h1 id="hero-title" class="hero-headline">
+        The <span class="accent-text">Live Conduit</span> for Python
+      </h1>
+      <p class="lead">HTML-over-the-wire without the JavaScript hangover.</p>
+      <div class="ctas">
+        <Link href="/docs/guides/quickstart/" isButton type="primary" class="cta cta-primary">
+          Get started
+          <Icon aria-hidden="true" name="lucide:arrow-right" size="1.1rem" />
+        </Link>
+        <Link
+          href="https://github.com/pywire/pywire"
+          isButton
+          type="secondary"
+          variant="outlined"
+          isExternal
+          hideIcon
+          class="cta cta-secondary"
+        >
+          <Icon aria-hidden="true" name="lucide:github" size="1.1rem" />
+          View on GitHub
+        </Link>
+      </div>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">01 · Python</p>
+      <h2>Write Python, not a frontend</h2>
+      <p class="lead">
+        A <code>.wire</code> file is Python on top of HTML. State lives on the server in <code>wire()</code> signals.
+      </p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">02 · Conduit</p>
+      <h2>One conduit, no API layer</h2>
+      <p class="lead">
+        No REST endpoints, no JSON, no client store to keep in sync. The server renders HTML over one live connection.
+      </p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">03 · Patch</p>
+      <h2>Click. Patch. Done.</h2>
+      <p class="lead">
+        Events go up the wire and only the node that changed comes back. Your turn: press <strong>Add one</strong>.
+      </p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">04 · Transport</p>
+      <h2>Any wire you've got</h2>
+      <p class="lead">WebSocket, WebTransport or HTTP long polling. Same app, same code.</p>
+    </div>
+    <div class="copy low step" data-step>
+      <p class="eyebrow">05 · Edge</p>
+      <h2>Stateless, at the edge</h2>
+      <p class="lead">
+        No server process held open per visitor. State rides along with each event, signed, so the nearest edge node
+        answers and every round trip stays short.
+      </p>
+    </div>
+    <button type="button" class="next" data-next>
+      <span class="next-k">Next</span>
+      <span class="next-label" data-next-label>Write Python, not a frontend</span>
+      <span class="next-go"
+        ><Icon aria-hidden="true" name="lucide:chevron-down" size="1.25rem" class="next-icon" /></span
+      >
+    </button>
+    <div class="progress" aria-hidden="true"><i data-progress></i></div>
+  </div>
+</section>
+
+<script>
+  import { mountStory } from '../scripts/hero-story/story'
+
+  let unmount: (() => void) | undefined
+  document.addEventListener('astro:page-load', () => {
+    unmount?.()
+    const root = document.querySelector<HTMLElement>('[data-story]')
+    unmount = root ? mountStory(root) : undefined
+  })
+  document.addEventListener('astro:before-swap', () => {
+    unmount?.()
+    unmount = undefined
+  })
+</script>
+
+<style lang="scss">
+  .story {
+    --gut: clamp(1.125rem, 4vw, 3.5rem);
+    // The part of the stage below what the browser shows: iPhone Safari's
+    // 100svh runs under its floating toolbar, while 100dvh stops above it.
+    --clear: max(0px, 100svh - 100dvh);
+
+    // accessible-astro's colors.css overrides the site's --color-primary-* tokens,
+    // so the story's buttons take the wire ladder directly.
+    --btn-bg: var(--accent-color);
+    --btn-bg-hover: var(--link-hover-color);
+    --btn-fg: light-dark(#fff, oklch(15% 0.04 195));
+
+    position: relative;
+    // Scroll length of the story; the last 100svh is the pull-back that the
+    // next section overlaps.
+    height: 640svh;
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+  }
+
+  // Measures 100dvh for the layout (see --clear).
+  .dvh {
+    position: absolute;
+    top: 0;
+    visibility: hidden;
+    width: 0;
+    height: 100dvh;
+  }
+
+  canvas {
+    display: block;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: pan-y;
+  }
+
+  :global(.no-gl) {
+    canvas,
+    .world {
+      display: none;
+    }
+
+    .stage {
+      background-image:
+        linear-gradient(var(--grid-line) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+  }
+
+  // --- Overlays that ride the camera -------------------------------------
+  .world {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+  }
+
+  .ov {
+    position: absolute;
+    top: 0;
+    left: 0;
+    opacity: 0;
+  }
+
+  // The hero's chip: the logo's chip frame, soldered onto the board.
+  .core {
+    display: grid;
+    position: absolute;
+    place-items: center;
+    box-shadow:
+      0 0 0 6px color-mix(in oklch, var(--accent-color) 6%, transparent),
+      0 18px 50px color-mix(in oklch, var(--background-color) 70%, transparent);
+    border: 1.5px solid color-mix(in oklch, var(--accent-color) 65%, var(--border-color));
+    border-radius: 22%;
+    background: light-dark(var(--theme-light-bg), #11141f);
+    color: var(--accent-color);
+
+    // Sized against the chip itself (padding % would follow the world layer).
+    :global(.core-mark) {
+      width: 72%;
+      height: 72%;
+    }
+  }
+
+  :global(:root.darkmode) .core {
+    box-shadow:
+      0 0 0 6px color-mix(in oklch, var(--accent-color) 7%, transparent),
+      0 0 60px color-mix(in oklch, var(--accent-color) 22%, transparent),
+      inset 0 0 28px color-mix(in oklch, var(--accent-color) 12%, transparent);
+
+    :global(.core-mark) {
+      filter: drop-shadow(0 0 10px color-mix(in oklch, var(--accent-color) 55%, transparent));
+    }
+  }
+
+  // Shared window chrome for the server card and the browser.
+  .srv,
+  .brw {
+    display: flex;
+    position: absolute;
+    flex-direction: column;
+    opacity: 0;
+    box-shadow: 0 12px 40px color-mix(in oklch, var(--background-color) 60%, transparent);
+    border: 1px solid color-mix(in oklch, var(--accent-color) 45%, var(--border-color));
+    border-radius: 10px;
+    background: light-dark(var(--theme-light-bg), #11141f);
+    overflow: hidden;
+  }
+
+  .win-bar {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 5px;
+    border-bottom: 1px solid var(--border-color);
+    background: light-dark(var(--theme-light-surface-2), #191c2a);
+    padding: 7px 10px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+
+    i {
+      border-radius: 50%;
+      background: var(--border-color);
+      width: 8px;
+      height: 8px;
+    }
+  }
+
+  .win-title {
+    color: var(--foreground-color);
+  }
+
+  .win-tag {
+    margin-left: auto;
+    color: var(--accent-color);
+    font-size: 8.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .srv-led {
+    box-shadow: 0 0 6px var(--accent-color);
+    border-radius: 50%;
+    background: var(--accent-color);
+    width: 7px;
+    height: 7px;
+  }
+
+  .srv-code {
+    padding: 10px 12px;
+    font-size: 11px;
+    line-height: 1.6;
+    font-family: var(--font-mono);
+
+    :global(pre) {
+      margin: 0;
+      background: transparent !important;
+      overflow: visible;
+    }
+
+    :global(code) {
+      font: inherit;
+    }
+
+    :global([data-count]) {
+      font-weight: 700;
+    }
+  }
+
+  // Shiki's dual themes: light colours inline, dark ones in --shiki-dark.
+  :global(:root.darkmode) .srv-code :global(.shiki span) {
+    color: var(--shiki-dark) !important;
+  }
+
+  .srv-code :global(.srv-state),
+  .srv-code :global(.srv-click) {
+    display: inline-block;
+    margin: 0 -12px;
+    padding: 0 12px;
+    width: calc(100% + 24px);
+  }
+
+  // An event lands on the @click line, then the state line changes.
+  .srv:global(.click) .srv-code :global(.srv-click),
+  .srv:global(.hit) .srv-code :global(.srv-state) {
+    animation: line-hit 0.9s ease-out;
+  }
+
+  // Holds a moment so the order reads, then fades.
+  @keyframes line-hit {
+    0%,
+    35% {
+      background: color-mix(in oklch, var(--accent-color) 20%, transparent);
+    }
+  }
+
+  .brw {
+    pointer-events: auto;
+  }
+
+  .brw-url {
+    flex: 1;
+    margin-left: 6px;
+    border-radius: 999px;
+    background: var(--background-color);
+    padding: 2px 10px;
+    max-width: 55%;
+    overflow: hidden;
+    color: var(--text-decoration-color);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .brw-body {
+    display: grid;
+    position: relative;
+    flex: 1;
+    align-content: center;
+    justify-items: center;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  // Faint page skeleton so the window reads as a page, not a dialog.
+  .brw-skel {
+    display: grid;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    gap: 6px;
+
+    i {
+      border-radius: 3px;
+      background: var(--border-color);
+      height: 6px;
+    }
+
+    i:nth-child(2) {
+      width: 60%;
+    }
+  }
+
+  .brw-count {
+    margin: 0;
+    color: var(--foreground-color);
+    font-weight: 600;
+    font-size: 1.4rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+
+    span {
+      display: inline-block;
+      border-radius: 4px;
+      padding: 0 3px;
+      color: var(--accent-color);
+    }
+
+    // Fine-grained: only the text node that changed lights up.
+    span:global(.patched) {
+      animation: patched 0.6s ease-out;
+    }
+  }
+
+  @keyframes patched {
+    from {
+      box-shadow: 0 0 0 1.5px var(--accent-color);
+      background: color-mix(in oklch, var(--accent-color) 25%, transparent);
+    }
+  }
+
+  .brw-act {
+    position: relative;
+  }
+
+  .ghost {
+    position: absolute;
+    top: 60%;
+    left: 70%;
+    opacity: 0;
+    transition: transform 0.12s;
+    pointer-events: none;
+
+    svg {
+      fill: #fff;
+      stroke: #0a0c14;
+    }
+
+    &:global(.down) {
+      transform: scale(0.82);
+    }
+  }
+
+  .lbl {
+    display: block;
+    translate: -50% -50%;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--background-color);
+    padding: 1px 6px;
+    color: var(--text-decoration-color);
+    font-size: 9px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  .lbl-stack {
+    text-decoration: line-through;
+    text-decoration-color: color-mix(in oklch, var(--text-decoration-color) 70%, transparent);
+  }
+
+  // The edge beat: a dot-matrix world, edge locations, and you travelling.
+  .map {
+    position: absolute;
+    opacity: 0;
+    // The world layer has no width, so the site's svg max-width: 100% would
+    // collapse the map.
+    max-width: none;
+    overflow: visible;
+    font-family: var(--font-mono);
+  }
+
+  .map-land {
+    stroke: color-mix(in oklch, var(--foreground-color) 26%, transparent);
+    stroke-linecap: round;
+    stroke-width: 1.35;
+  }
+
+  .beacon {
+    text {
+      transition: fill 0.25s;
+      fill: color-mix(in oklch, var(--foreground-color) 55%, transparent);
+      font-size: 3.6px;
+      text-anchor: middle;
+      letter-spacing: 0.06em;
+    }
+
+    .b-ring {
+      transition:
+        stroke 0.25s,
+        r 0.25s;
+      fill: color-mix(in oklch, var(--background-color) 70%, transparent);
+      stroke: color-mix(in oklch, var(--accent-color) 45%, transparent);
+      stroke-width: 0.5;
+    }
+
+    .b-core {
+      fill: color-mix(in oklch, var(--accent-color) 70%, transparent);
+    }
+
+    // The edge serving you right now.
+    &:global(.on) {
+      text {
+        fill: var(--accent-color);
+      }
+
+      .b-ring {
+        stroke: var(--accent-color);
+        stroke-width: 0.8;
+      }
+
+      .b-core {
+        fill: var(--accent-color);
+      }
+    }
+
+    // An event landing: a ring pings out from the node.
+    .b-ping {
+      transform-box: fill-box;
+      transform-origin: center;
+      opacity: 0;
+      fill: none;
+      stroke: var(--accent-color);
+      stroke-width: 0.6;
+    }
+
+    &:global(.hit) .b-ping {
+      animation: beacon-ping 0.6s ease-out;
+    }
+  }
+
+  @keyframes beacon-ping {
+    from {
+      transform: scale(1);
+      opacity: 0.5;
+    }
+
+    to {
+      transform: scale(1.8);
+      opacity: 0;
+    }
+  }
+
+  :global(:root.darkmode) .beacon:global(.on) {
+    filter: drop-shadow(0 0 2.5px var(--accent-color));
+  }
+
+  .map-link {
+    transition: stroke-width 0.15s;
+    stroke: var(--accent-color);
+    stroke-dasharray: calc(1.2px * var(--k, 1)) calc(1.6px * var(--k, 1));
+    stroke-linecap: round;
+    // --k scales the markers up when the map is small (set by the story).
+    stroke-width: calc(0.7px * var(--k, 1));
+
+    // A round trip in flight.
+    &:global(.busy) {
+      stroke-dasharray: none;
+      stroke-width: calc(1.1px * var(--k, 1));
+    }
+  }
+
+  .map-packet {
+    opacity: 0;
+    fill: var(--accent-color);
+  }
+
+  :global(:root.darkmode) .map-packet {
+    filter: drop-shadow(0 0 2px var(--accent-color));
+  }
+
+  .you {
+    .you-ring {
+      fill: none;
+      stroke: var(--foreground-color);
+      stroke-width: 0.6;
+    }
+
+    .you-core {
+      fill: var(--foreground-color);
+    }
+
+    text {
+      fill: var(--foreground-color);
+      font-size: 3.6px;
+      text-anchor: middle;
+      letter-spacing: 0.06em;
+    }
+  }
+
+  .lbl-tx {
+    translate: 0 calc(-100% - 4px);
+    transition:
+      color 0.2s,
+      border-color 0.2s;
+  }
+
+  [data-ov='tx']:global(.on) .lbl-tx {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+  }
+
+  :global([data-orient='portrait']) .lbl-tx {
+    translate: 0 -50%;
+  }
+
+  .wchip {
+    display: block;
+    translate: -50% calc(-100% - 8px);
+    border: 1px solid color-mix(in oklch, var(--accent-color) 60%, transparent);
+    border-radius: 4px;
+    background: var(--background-color);
+    padding: 2px 7px;
+    color: var(--accent-color);
+    font-size: 10px;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  :global([data-orient='portrait']) .wchip {
+    translate: 10px -50%;
+  }
+
+  .card-btn {
+    position: relative;
+    transition: background-color var(--animation-speed-fast);
+    cursor: pointer;
+    border: 0;
+    border-radius: 8px;
+    background: var(--btn-bg);
+    padding: 0.5rem 0.95rem;
+    color: var(--btn-fg);
+    font: 600 0.9rem var(--font-body);
+
+    &:hover {
+      background: var(--btn-bg-hover);
+    }
+
+    // Before step 3 the counter isn't wired up yet; make that obvious.
+    &:disabled {
+      opacity: 0.4;
+      filter: grayscale(1);
+      cursor: not-allowed;
+      background: var(--btn-bg);
+    }
+
+    &:active,
+    &:global(.pressed) {
+      transform: translateY(1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 3px;
+    }
+
+    // After the scripted demo, invite the visitor to take over.
+    &:global(.your-turn) {
+      animation: your-turn 2.4s ease-out infinite;
+    }
+  }
+
+  // The edge beat clicks on its own; keep it calm.
+  :global([data-story][data-step='5']) .card-btn:global(.your-turn) {
+    animation: none;
+  }
+
+  @keyframes your-turn {
+    from {
+      box-shadow: 0 0 0 0 color-mix(in oklch, var(--accent-color) 35%, transparent);
+    }
+
+    to {
+      box-shadow: 0 0 0 12px transparent;
+    }
+  }
+
+  // --- Copy -------------------------------------------------------------
+  .copy {
+    display: grid;
+    position: absolute;
+    top: clamp(96px, 17svh, 190px);
+    right: var(--gut);
+    left: var(--gut);
+    gap: 20px;
+    isolation: isolate;
+    max-width: 40rem;
+
+    // Soft scrim so the copy reads over whatever the grid is doing.
+    &::before {
+      position: absolute;
+      z-index: -1;
+      inset: -30% -25%;
+      background: radial-gradient(
+        closest-side,
+        color-mix(in oklch, var(--background-color) 82%, transparent),
+        transparent
+      );
+      pointer-events: none;
+      content: '';
+    }
+
+    &.low {
+      top: auto;
+      bottom: calc(clamp(90px, 13svh, 150px) + var(--clear));
+    }
+
+    h2 {
+      margin: 0;
+      font-weight: 600;
+      font-size: clamp(2rem, 1.3rem + 2.8vw, 3.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      text-wrap: balance;
+    }
+
+    code {
+      color: var(--accent-color);
+      font-size: 0.9em;
+      font-family: var(--font-mono);
+    }
+  }
+
+  .hero-headline {
+    margin: 0;
+    max-width: 12ch;
+    color: var(--foreground-color);
+    font-weight: 700;
+    font-size: clamp(2.75rem, 1.5rem + 5vw, 5.5rem);
+    line-height: 1.02;
+    font-family: var(--font-heading);
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  .accent-text {
+    color: var(--accent-color);
+    text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
+  }
+
+  .lead {
+    margin: 0;
+    max-width: 30rem;
+    color: var(--text-decoration-color);
+    font-size: clamp(1.05rem, 0.95rem + 0.5vw, 1.3rem);
+    line-height: 1.45;
+    text-wrap: pretty;
+
+    strong {
+      color: var(--foreground-color);
+      font-weight: 600;
+    }
+  }
+
+  .eyebrow {
+    margin: 0;
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 0.78rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 8px;
+  }
+
+  // Compact CTA pair: defeat accessible-astro's default 3px borders and padding.
+  :global(.cta) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    border-width: 1.5px !important;
+    border-radius: 8px !important;
+    padding: 0.75rem 1.2rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+  }
+
+  :global(.cta-primary) {
+    box-shadow: var(--glow-cyan-soft);
+    border-color: var(--btn-bg) !important;
+    background: var(--btn-bg) !important;
+    color: var(--btn-fg) !important;
+  }
+
+  :global(.cta-primary:hover) {
+    box-shadow: var(--glow-cyan);
+    border-color: var(--btn-bg-hover) !important;
+    background: var(--btn-bg-hover) !important;
+  }
+
+  :global(.cta-secondary) {
+    background: color-mix(in oklch, var(--background-color) 60%, transparent) !important;
+  }
+
+  // Outgoing copy clears quickly; incoming copy waits for it so two steps never overlap.
+  .step {
+    transform: translateY(16px);
+    opacity: 0;
+    transition:
+      opacity 0.18s ease-in,
+      transform 0.18s ease-in;
+    pointer-events: none;
+
+    &:global(.on) {
+      transform: none;
+      opacity: 1;
+      transition:
+        opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.16s,
+        transform 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.16s;
+      pointer-events: auto;
+    }
+  }
+
+  // Tells you there is more below and what it is; clicking glides to that beat.
+  .next {
+    display: inline-flex;
+    position: absolute;
+    // On the hero the stage still sits under the sticky nav, so its bottom
+    // edge is below the fold; lift the button until the story is pinned.
+    bottom: calc(80px + var(--clear));
+    left: 50%;
+    align-items: center;
+    gap: 12px;
+    translate: -50% 0;
+    backdrop-filter: blur(8px);
+    transition:
+      opacity 0.3s,
+      border-color var(--animation-speed-fast),
+      box-shadow var(--animation-speed-fast),
+      background-color var(--animation-speed-fast);
+    cursor: pointer;
+    box-shadow: 0 8px 30px color-mix(in oklch, var(--background-color) 60%, transparent);
+    border: 1px solid color-mix(in oklch, var(--accent-color) 55%, var(--border-color));
+    border-radius: 999px;
+    background: color-mix(in oklch, var(--background-color) 82%, transparent);
+    padding: 10px 10px 10px 22px;
+    max-width: calc(100% - 2 * var(--gut));
+    color: var(--foreground-color);
+    font: 600 1.05rem var(--font-body);
+    white-space: nowrap;
+
+    &:hover {
+      box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent-color) 14%, transparent);
+      border-color: var(--accent-color);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent-color);
+      outline-offset: 3px;
+    }
+
+    &:global(.gone) {
+      opacity: 0;
+      pointer-events: none;
+    }
+  }
+
+  :global(:root.darkmode) .next {
+    box-shadow: 0 0 32px color-mix(in oklch, var(--accent-color) 16%, transparent);
+  }
+
+  :global([data-story]:not([data-step='0'])) .next {
+    bottom: calc(22px + var(--clear));
+  }
+
+  .next-k {
+    color: var(--accent-color);
+    font-weight: 500;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .next-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .next-go {
+    display: grid;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--btn-bg);
+    width: 34px;
+    height: 34px;
+    color: var(--btn-fg);
+  }
+
+  :global(.next-icon) {
+    animation: nudge 1.8s ease-in-out infinite;
+  }
+
+  @keyframes nudge {
+    50% {
+      transform: translateY(3px);
+    }
+  }
+
+  .progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--border-color);
+    height: 2px;
+
+    i {
+      position: absolute;
+      transform: scaleX(0);
+      transform-origin: left;
+      inset: 0;
+      background: var(--accent-color);
+    }
+  }
+
+  // Short phone screens (Safari or Chrome with their toolbars showing): tighter
+  // copy, so the diagram above it keeps a readable size.
+  @media (max-width: 799px) and (max-height: 760px) {
+    .copy {
+      top: clamp(76px, 14svh, 190px);
+      gap: 12px;
+
+      &.low {
+        bottom: calc(90px + var(--clear));
+      }
+
+      h2 {
+        font-size: 1.75rem;
+      }
+    }
+
+    .hero-headline {
+      font-size: clamp(2.4rem, 1.2rem + 5vw, 3rem);
+    }
+
+    .lead {
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+  }
+
+  // Short landscape screens (tablets with toolbars, small laptops): a smaller
+  // step headline leaves the diagram more room.
+  @media (min-width: 800px) and (max-height: 820px) {
+    .copy {
+      gap: 14px;
+
+      h2 {
+        font-size: clamp(2rem, 1rem + 2.4vw, 2.9rem);
+      }
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card-btn:global(.your-turn),
+    :global(.next-icon) {
+      animation: none;
+    }
+
+    .step {
+      transform: none;
+      transition: none;
+    }
+  }
+</style>

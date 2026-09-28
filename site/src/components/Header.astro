@@ -49,7 +49,61 @@ import { Icon } from 'astro-icon/components'
   </Navigation>
 </header>
 
+<script>
+  // Once the header has scrolled away, bring it back when the mouse nears the
+  // top of the screen (or focus lands in it), and tuck it away again when the
+  // mouse moves on.
+  const NEAR = 48
+  let shown = false
+  const header = () => document.querySelector('body > header') as HTMLElement | null
+  const place = () => {
+    const el = header()
+    if (!el) return
+    el.style.top = `${-el.offsetHeight}px`
+    el.style.translate = shown ? `0 ${Math.min(scrollY, el.offsetHeight)}px` : ''
+    el.toggleAttribute('data-revealed', shown && scrollY > 0)
+  }
+  const show = (on: boolean) => {
+    const el = header()
+    if (!el || on === shown) return
+    if (!on && (el.matches(':focus-within') || el.querySelector('[aria-expanded="true"]'))) return
+    shown = on
+    place()
+  }
+  addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return
+    const el = header()
+    if (!el) return
+    if (e.clientY < NEAR) show(true)
+    else if (e.clientY > el.offsetHeight + NEAR) show(false)
+  })
+  addEventListener('scroll', place, { passive: true })
+  addEventListener('focusin', (e) => {
+    if (header()?.contains(e.target as Node)) show(true)
+  })
+  document.addEventListener('astro:page-load', () => {
+    shown = false
+    place()
+  })
+</script>
+
 <style lang="scss" is:global>
+  body > header {
+    // Sticks just above the screen once scrolled away, so it can slide back in.
+    position: sticky;
+    top: -57px;
+    z-index: 100;
+    transition: translate 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+
+    &[data-revealed] #main-navigation {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
   header {
     .type-icon {
       display: block;
