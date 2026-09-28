@@ -699,9 +699,6 @@ export function mountStory(root: HTMLElement) {
   const clear = () => Math.max(0, canvas.clientHeight - dvh.offsetHeight)
   // The visible height changes with the toolbar: refit.
   const fitOver = () => (geom = '')
-  // ?viewport shows what this browser reports about its viewport.
-  if (new URLSearchParams(location.search).has('viewport'))
-    void import('./viewport-probe').then((m) => m.probe(canvas, next))
   visualViewport?.addEventListener('resize', fitOver)
   addEventListener('resize', fitOver)
 
