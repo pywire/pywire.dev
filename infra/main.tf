@@ -119,6 +119,20 @@ resource "cloudflare_dns_record" "nightly" {
   ttl     = 1
 }
 
+# --- Demos (demo.pywire.dev) ---
+# Workers only: the landing page and each example are Workers deployed from
+# pywire/pywire (Deploy Examples workflow) with their own routes. A proxied
+# record is all the hostname needs; 100:: is the placeholder Cloudflare
+# documents for a Worker-only hostname.
+resource "cloudflare_dns_record" "demo" {
+  zone_id = var.zone_id
+  name    = "demo"
+  content = "100::"
+  type    = "AAAA"
+  proxied = true
+  ttl     = 1
+}
+
 # --- VS Code Marketplace Domain Verification ---
 resource "cloudflare_dns_record" "vscode_verification" {
   zone_id = var.zone_id
