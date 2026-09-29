@@ -16,44 +16,38 @@ import { Icon } from 'astro-icon/components'
   <div class="roadmap-page">
     <section class="hero">
       <div class="wrap">
-        <p class="eyebrow">Roadmap</p>
-        <h1>Where the <span>wire</span> runs next</h1>
+        <h1>Roadmap</h1>
         <p class="lede">
-          pywire is heading to 1.0: a stable API you can build a business on, and everything a production SaaS needs
-          without a heavy JavaScript frontend. Here's the route, in the order it gets built. Until 1.0, expect breaking
-          changes between minor versions.
+          What's being built for pywire, in order. pywire is pre-1.0, so expect breaking changes between minor versions
+          until then.
         </p>
         <div class="legend">
-          <span><i class="node now" aria-hidden="true"></i>Now: being built</span>
+          <span><i class="node now" aria-hidden="true"></i>Now: in progress</span>
           <span><i class="node next" aria-hidden="true"></i>Next: planned</span>
-          <span><i class="node later" aria-hidden="true"></i>Later: toward 1.0 and beyond</span>
+          <span><i class="node later" aria-hidden="true"></i>Later: 1.0 and after</span>
         </div>
       </div>
     </section>
 
     <section class="principles" aria-labelledby="principles-h">
       <div class="wrap">
-        <h2 class="eyebrow" id="principles-h">What guides it</h2>
+        <h2 class="eyebrow" id="principles-h">Principles</h2>
         <dl>
-          <div><dt>Built for agents</dt><dd>Docs, tests and tooling made for agentic coding.</dd></div>
-          <div>
-            <dt>Scales by design</dt><dd>Sessions shared across workers, restored on reconnect, minimal diffs.</dd>
-          </div>
-          <div><dt>Built for SaaS</dt><dd>Real products without a heavy JavaScript frontend.</dd></div>
-          <div>
-            <dt>Small core, official add-ons</dt><dd>Batteries you opt into, maintained alongside the core.</dd>
-          </div>
-          <div><dt>Server and edge are equals</dt><dd>Long-running servers and serverless, same code.</dd></div>
-          <div><dt>Real-time is core</dt><dd>Shared state, presence and rooms ship in 1.0.</dd></div>
-          <div><dt>WebTransport ready</dt><dd>Built in, switched on as the server stack catches up.</dd></div>
-          <div><dt>Open source</dt><dd>Apache 2.0, backed by sponsors.</dd></div>
+          <div><dt>Written for coding agents</dt><dd>Docs, tests and tooling your agent can use.</dd></div>
+          <div><dt>Full products in Python</dt><dd>No separate JavaScript frontend.</dd></div>
+          <div><dt>Small core</dt><dd>Auth, security and testing ship as official add-ons.</dd></div>
+          <div><dt>Servers and the edge</dt><dd>The same code on a long-running server or serverless.</dd></div>
+          <div><dt>Scales out</dt><dd>Sessions move between workers and survive reconnects.</dd></div>
+          <div><dt>Real-time in 1.0</dt><dd>Shared state, presence and rooms.</dd></div>
+          <div><dt>WebTransport</dt><dd>Built in, and on by default once Python's HTTP/3 servers support it.</dd></div>
+          <div><dt>Apache 2.0</dt><dd>Free to use, funded by sponsors.</dd></div>
         </dl>
       </div>
     </section>
 
     <section class="shipped" aria-labelledby="shipped-h">
       <div class="wrap">
-        <h2 class="eyebrow" id="shipped-h">Already shipped</h2>
+        <h2 class="eyebrow" id="shipped-h">Shipped</h2>
         <ul>
           <li><a href="/docs/concepts/reactivity/">Signals and <code>.wire</code> components</a></li>
           <li><a href="/docs/guides/routing/">File routing and layouts</a></li>
@@ -72,17 +66,14 @@ import { Icon } from 'astro-icon/components'
         <div class="lane-head">
           <i class="node now" aria-hidden="true"></i>
           <h2 id="now-h">Now</h2>
-          <p class="sum">Make what already exists trustworthy. Your first real app shouldn't hit a framework bug.</p>
-          <p class="top3">
-            <strong>First up:</strong> components in loops, shared state for every user, and edge mode. Cards are in priority
-            order.
-          </p>
+          <p class="sum">In progress, in priority order.</p>
         </div>
         <ul class="items">
           <li class="item">
-            <h3>Components that behave</h3><p>
+            <h3>Component fixes</h3><p>
               Components inside <code>$for</code> get their own instance, <code>props</code> work in functions defined in
-              a component's frontmatter, and child-to-parent callbacks get documented. Plus two fixes from the benchmark run.
+              a component's frontmatter, child-to-parent callbacks get documented, and two bugs from the benchmark run get
+              fixed.
             </p><div class="meta">
               <a class="ref" aria-label="Issue 290" href="https://github.com/pywire/pywire/issues/290" rel="external"
                 >#290</a
@@ -102,10 +93,10 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Shared state reaches everyone</h3><p>
+            <h3>Shared state across clients</h3><p>
               A change to a shared <code>wire()</code> or <code>producer()</code> reaches every connected client, across workers.
-              In-process by default, Redis when <code>REDIS_URL</code> is set. Until it lands, the docs say exactly what is
-              shared.
+              It works in one process by default and through Redis when <code>REDIS_URL</code> is set. Until then, the docs
+              will say what is shared.
             </p><div class="meta">
               <a class="ref" aria-label="Issue 284" href="https://github.com/pywire/pywire/issues/284" rel="external"
                 >#284</a
@@ -114,10 +105,9 @@ import { Icon } from 'astro-icon/components'
           </li>
           <li class="item">
             <h3>Edge stateless mode</h3><p>
-              Run on Cloudflare Workers, AWS Lambda, Azure Functions and Google Cloud with signed state snapshots. It
-              also brings keyed <code>&#123;$for&#125;</code> regions to every tier, so a one-row change on a 5,000-row list
-              sends one row over WebSocket (304 B instead of 913 KB), plus optimistic UI and <code>@poll</code>. What
-              differs between tiers goes in a published capability table.
+              Run on Cloudflare Workers, AWS Lambda, Azure Functions and Google Cloud, with page state kept in signed
+              snapshots instead of a server session. It also adds keyed <code>&#123;$for&#125;</code> regions, which send
+              only the changed row (304 B instead of 913 KB on a 5,000-row list), optimistic UI and <code>@poll</code>.
             </p><div class="meta">
               <span class="status">In a pull request</span><a
                 class="ref"
@@ -128,9 +118,9 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Faster by default</h3><p>
-              Lighter session saves per event, compressed stateless snapshots, gzip and Brotli responses, and published
-              benchmarks for the default WebSocket mode.
+            <h3>Performance</h3><p>
+              Cheaper session saves, compressed stateless snapshots, gzip and Brotli responses, and published
+              benchmarks.
             </p><div class="meta">
               <a
                 class="ref"
@@ -179,9 +169,9 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>A tighter dev loop</h3><p>
-              Reload on any change under <code>src/</code>, new pages without a restart, and the full traceback when a
-              page fails on first render.
+            <h3>Dev server</h3><p>
+              Reload on any change under <code>src/</code>, pick up new pages without a restart, and show the full
+              traceback when a page fails on first render.
             </p><div class="meta">
               <a class="ref" aria-label="Issue 287" href="https://github.com/pywire/pywire/issues/287" rel="external"
                 >#287</a
@@ -193,15 +183,14 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>FastAPI, first class</h3><p>
+            <h3>FastAPI integration</h3><p>
               Mounting pywire in FastAPI already works (<a href="/docs/guides/framework-integration/">guide</a>). Next:
-              dependency injection and auth shared with your FastAPI routes, and the rough edges smoothed out.
+              share dependency injection and auth with your FastAPI routes.
             </p>
           </li>
           <li class="item">
-            <h3><code>pywire check</code> knows the classic mistakes</h3><p>
-              Static checks for the template and handler pitfalls people actually hit, reported in the terminal and in
-              your editor.
+            <h3>More <code>pywire check</code> rules</h3><p>
+              Checks for common template and handler mistakes, reported in the terminal and in your editor.
             </p><div class="meta">
               <a class="ref" aria-label="Issue 301" href="https://github.com/pywire/pywire/issues/301" rel="external"
                 >#301</a
@@ -215,25 +204,25 @@ import { Icon } from 'astro-icon/components'
         <div class="lane-head">
           <i class="node next" aria-hidden="true"></i>
           <h2 id="next-h">Next</h2>
-          <p class="sum">Everything a SaaS needs, from live data to deploys from CI.</p>
+          <p class="sum">Planned next. Not started yet.</p>
         </div>
         <ul class="items">
           <li class="item">
-            <h3>Real-time between users</h3><p>
+            <h3>Rooms and presence</h3><p>
               Rooms and channels for chat, presence and collaborative views, plus server-sent events for streaming on
               the stateless tier.
             </p>
           </li>
           <li class="item">
-            <h3>Live data with <code>pywire-db</code></h3><p>
-              Queries that re-render every page showing them when the data changes, in every worker. SQLAlchemy and
-              SQLModel first, the Django ORM later, and <code>invalidate()</code> for raw SQL.
+            <h3>Live queries with <code>pywire-db</code></h3><p>
+              A query re-renders every page that shows it when its data changes, across workers. SQLAlchemy and SQLModel
+              first, the Django ORM later, and <code>invalidate()</code> for raw SQL.
             </p>
           </li>
           <li class="item">
-            <h3>Forms, done properly</h3><p>
-              Typed form refs, declarative validation that reconciles HTML5 and Pydantic, sensible debounce defaults,
-              and file uploads documented as a feature.
+            <h3>Forms</h3><p>
+              Forms bound to a Pydantic model, one set of validation rules for the browser and the server, debounce
+              defaults, and file uploads.
             </p><div class="meta">
               <a class="ref" aria-label="Issue 19" href="https://github.com/pywire/pywire/issues/19" rel="external"
                 >#19</a
@@ -249,14 +238,14 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Docs and examples for coding agents</h3><p>
+            <h3>Docs for coding agents</h3><p>
               An <code>AGENTS.md</code> in every new app, an agent skill for building with pywire, guides on structuring complex
               apps, and reference apps that show the patterns.
             </p>
           </li>
           <li class="item">
-            <h3>A real SaaS starter</h3><p>
-              The <code>saas</code> template grows into a reference app with auth, teams, settings, billing hooks and email.
+            <h3>SaaS starter app</h3><p>
+              The <code>saas</code> template becomes a reference app with auth, teams, settings, billing hooks and email.
             </p>
           </li>
           <li class="item">
@@ -273,7 +262,7 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Testing, fuller</h3><p>
+            <h3>Testing</h3><p>
               A test client over a real WebSocket, <code>client.login()</code>, events fired from CSS selectors, HTML
               snapshots, and fixtures loaded from <code>.wire</code> files.
             </p><div class="meta">
@@ -291,7 +280,7 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Observability, deeper</h3><p>
+            <h3>Observability</h3><p>
               An OpenTelemetry span per event, a metrics endpoint, and traces that survive reconnects.
             </p><div class="meta">
               <a class="ref" href="https://github.com/pywire/pywire/issues/254" rel="external" aria-label="Issue 254"
@@ -304,15 +293,14 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Editors that know your components</h3><p>
+            <h3>Editor support for components</h3><p>
               Prop completion, go-to-definition on component tags, and quick fixes from <code>pywire check --fix</code>.
             </p>
           </li>
           <li class="item">
-            <h3>WebTransport in production</h3><p>
-              pywire's WebTransport transport is built, with automatic fallback to WebSocket. It turns on by default as
-              Hypercorn and Starlette finish HTTP/3 support and hosts forward WebTransport to your app, with middleware
-              applied the same as over WebSocket.
+            <h3>WebTransport by default</h3><p>
+              The WebTransport transport is built and falls back to WebSocket. It becomes the default once Hypercorn and
+              Starlette support HTTP/3 and hosts pass WebTransport through, with the same middleware as WebSocket.
             </p>
           </li>
           <li class="item">
@@ -328,14 +316,11 @@ import { Icon } from 'astro-icon/components'
         <div class="lane-head">
           <i class="node later" aria-hidden="true"></i>
           <h2 id="later-h">Later</h2>
-          <p class="sum">The run-up to 1.0, and a few ideas past it.</p>
+          <p class="sum">The last steps to 1.0, and ideas for after it.</p>
         </div>
         <ul class="items">
           <li class="item">
-            <h3>A stability promise</h3><p>
-              Semantic versioning, a deprecation window and a documented public API. Until then, pywire takes clean
-              breaks over compatibility shims.
-            </p>
+            <h3>Stability policy</h3><p>Semantic versioning, a deprecation window and a documented public API.</p>
           </li>
           <li class="item">
             <span class="status after">After 1.0</span><h3>Polyglot islands</h3><p>
@@ -356,14 +341,14 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <span class="status after">After 1.0</span><h3>An agent UI add-on</h3><p>
-              An official add-on for building AI features into your app: a chat panel whose agent can read the page,
-              fill forms and click through flows with the user's permission, and rearrange the layout when asked.
+            <span class="status after">After 1.0</span><h3>Agent UI add-on</h3><p>
+              An official add-on for AI features: a chat panel whose agent can read the page, fill forms and click
+              through flows with the user's permission, and rearrange the layout when asked.
             </p>
           </li>
           <li class="item">
             <h3>A plugin API</h3><p>
-              Custom directives and hooks, turning today's <code>connect_*</code> pattern into a supported extension point.
+              Custom directives and hooks, replacing today's <code>connect_*</code> helpers with a supported API.
             </p><div class="meta">
               <a
                 class="ref"
@@ -374,7 +359,7 @@ import { Icon } from 'astro-icon/components'
             </div>
           </li>
           <li class="item">
-            <h3>Faster builds and pages</h3><p>
+            <h3>Build-time rendering</h3><p>
               Pages with nothing interactive prerendered at build time, image optimization, and constant folding in the
               compiler.
             </p><div class="meta">
@@ -404,7 +389,7 @@ import { Icon } from 'astro-icon/components'
           </li>
           <li class="item far">
             <span class="status after">After 1.0</span><h3>Desktop and mobile apps</h3><p>
-              Native desktop and mobile apps from the same <code>.wire</code> code, growing out of the pywire-shell prototype.
+              Native desktop and mobile apps from the same <code>.wire</code> code, based on the pywire-shell prototype.
             </p>
           </li>
         </ul>
@@ -415,11 +400,8 @@ import { Icon } from 'astro-icon/components'
       <div class="wrap">
         <div class="panel">
           <div class="intro">
-            <p class="eyebrow">Version 1.0</p>
             <h2 id="one-h">What 1.0 means</h2>
-            <p>
-              Two promises at once: an API that won't break under you, and a framework you can run a real product on.
-            </p>
+            <p>1.0 ships when all of these are true.</p>
           </div>
           <ul class="checks">
             <li>
@@ -461,8 +443,7 @@ import { Icon } from 'astro-icon/components'
 
     <div class="wrap two">
       <section class="card" aria-labelledby="how-h">
-        <p class="eyebrow">How it gets built</p>
-        <h2 id="how-h">One maintainer, a lot of agents</h2>
+        <h2 id="how-h">How it's built</h2>
         <p>
           pywire has one maintainer, and AI coding agents write most of the code. Every change is reviewed by the
           maintainer and has to pass CI, including unit, client and browser end-to-end tests, before it merges. Agents
@@ -470,15 +451,14 @@ import { Icon } from 'astro-icon/components'
         </p>
       </section>
       <section class="card" aria-labelledby="shape-h">
-        <p class="eyebrow">Get involved</p>
-        <h2 id="shape-h">Shape what comes next</h2>
+        <h2 id="shape-h">Get involved</h2>
         <p>
-          The order on this page moves with what people build. Say what you need in GitHub Discussions, or support the
-          maintainer if pywire saves you time.
+          Priorities follow what people ask for. Start a discussion on GitHub, or support the maintainer if pywire saves
+          you time.
         </p>
         <div class="btns">
           <a class="btn primary" href="https://github.com/pywire/pywire/discussions" rel="external"
-            >Join the discussion<Icon aria-hidden="true" name="lucide:arrow-right" /></a
+            >Start a discussion<Icon aria-hidden="true" name="lucide:arrow-right" /></a
           >
           <a class="btn ghost" href="https://ko-fi.com/reecelikesramen" rel="external">Support on Ko-fi</a>
           <a class="btn ghost" href="https://github.com/sponsors/pywire" rel="external">Sponsor on GitHub</a>
@@ -582,10 +562,6 @@ import { Icon } from 'astro-icon/components'
       font-size: clamp(2.6rem, 1.6rem + 4.6vw, 4.6rem);
       line-height: 1.03;
       letter-spacing: -0.035em;
-    }
-    .hero h1 span {
-      color: var(--accent-color);
-      text-shadow: 0 0 24px color-mix(in oklch, var(--accent-color) 28%, transparent);
     }
     .hero .lede {
       max-width: 40rem;
@@ -734,8 +710,7 @@ import { Icon } from 'astro-icon/components'
       font-size: 0.97rem;
     }
     @media (min-width: 900px) {
-      .lane-head p.sum,
-      .lane-head .top3 {
+      .lane-head p.sum {
         grid-column: 2;
       }
     }
@@ -856,16 +831,6 @@ import { Icon } from 'astro-icon/components'
       width: 6px;
       height: 6px;
       content: '';
-    }
-    .top3 {
-      grid-column: 1 / -1;
-      margin-top: 0.9rem;
-      color: var(--text-decoration-color);
-      font-size: 0.9rem;
-    }
-    .top3 strong {
-      color: var(--foreground-color);
-      font-weight: 600;
     }
     h2.eyebrow {
       font-weight: 500;
