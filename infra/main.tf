@@ -152,16 +152,27 @@ locals {
   )
 }
 
-resource "cloudflare_worker" "demo" {
-  for_each   = local.demo_workers
-  account_id = var.account_id
-  name       = each.value
+# Created through the scripts API, like the router, with a placeholder that
+# answers 503 until the Deploy Examples workflow uploads the real code. After
+# that the workflow owns the code and settings, so Terraform never updates
+# them. (cloudflare_worker's newer Workers API returned 403 for this token even
+# with Workers Scripts Write and Workers Editor.)
+resource "cloudflare_workers_script" "demo" {
+  for_each           = local.demo_workers
+  account_id         = var.account_id
+  script_name        = each.value
+  main_module        = "placeholder.js"
+  compatibility_date = "2026-09-01"
+  content            = <<-JS
+    export default {
+      fetch() {
+        return new Response("This demo hasn't been deployed yet.", { status: 503 });
+      },
+    };
+  JS
 
-  # Only reachable through the routes below, like workers_dev = false and
-  # preview_urls = false in each wrangler.toml.
-  subdomain = {
-    enabled          = false
-    previews_enabled = false
+  lifecycle {
+    ignore_changes = all
   }
 }
 
@@ -171,7 +182,7 @@ resource "cloudflare_workers_route" "demo" {
   for_each = local.demo_routes
   zone_id  = var.zone_id
   pattern  = each.value.pattern
-  script   = cloudflare_worker.demo[each.value.worker].name
+  script   = cloudflare_workers_script.demo[each.value.worker].script_name
 }
 
 # --- VS Code Marketplace Domain Verification ---
