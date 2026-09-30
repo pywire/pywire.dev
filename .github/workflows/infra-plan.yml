@@ -83,13 +83,29 @@ jobs:
               await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
             }
 
-      - name: Enforce converged state (push to main)
-        # On main, a non-empty plan means applied infra no longer matches the repo.
-        if: github.event_name == 'push' && steps.plan.outputs.exitcode != '0'
+      - name: Report plan on main (push)
+        # Merge first, apply second is the normal flow, so a non-empty plan
+        # right after a merge is pending work, not a failure. Only a plan
+        # that errors fails. Drift that lingers is caught by the weekly check.
+        if: github.event_name == 'push'
         run: |
+          code='${{ steps.plan.outputs.exitcode }}'
           cat plan.txt
-          echo "::error title=Infrastructure drift::main does not match applied state — run the 'Infra apply' workflow to converge."
-          exit 1
+          if [ "$code" = "0" ]; then
+            echo "Infrastructure matches main." >>"$GITHUB_STEP_SUMMARY"
+          elif [ "$code" = "2" ]; then
+            echo "::notice title=Infra changes pending::main has changes that are not applied yet. Run the 'Infra apply' workflow."
+            {
+              echo "### Infra changes pending"
+              echo "Run the **Infra apply** workflow to apply them."
+              echo '```hcl'
+              tail -c 50000 plan.txt
+              echo '```'
+            } >>"$GITHUB_STEP_SUMMARY"
+          else
+            echo "::error title=Terraform plan failed::See the plan output above."
+            exit 1
+          fi
 
       - name: Open drift issue (scheduled check)
         if: github.event_name == 'schedule' && steps.plan.outputs.exitcode != '0'
