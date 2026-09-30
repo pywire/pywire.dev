@@ -120,10 +120,11 @@ resource "cloudflare_dns_record" "nightly" {
 }
 
 # --- Demos (demo.pywire.dev) ---
-# The landing page and each example are Workers whose code pywire/pywire's
-# Deploy Examples workflow uploads. Their DNS and routes live here. The Workers
-# must exist before these routes apply, so the first apply follows that
-# workflow's first run.
+# The landing page and each example are Workers. Terraform creates them and
+# owns their DNS and routes; pywire/pywire's Deploy Examples workflow only
+# uploads their code and vars, the way Pages deployments go to the Pages
+# projects above. Secrets are set with `wrangler secret put` so they stay out
+# of state.
 resource "cloudflare_dns_record" "demo" {
   zone_id = var.zone_id
   name    = "demo"
@@ -136,15 +137,32 @@ resource "cloudflare_dns_record" "demo" {
 locals {
   # Each example is served under /<name> by the Worker pywire-demo-<name>.
   demo_examples = ["edge-stateless", "form-builder"]
+  demo_workers = merge(
+    { "site" = "pywire-demo" },
+    { for name in local.demo_examples : name => "pywire-demo-${name}" },
+  )
   demo_routes = merge(
-    { "site" = { pattern = "demo.pywire.dev/*", script = "pywire-demo" } },
+    { "site" = { pattern = "demo.pywire.dev/*", worker = "site" } },
     { for name in local.demo_examples : name => {
-      pattern = "demo.pywire.dev/${name}", script = "pywire-demo-${name}"
+      pattern = "demo.pywire.dev/${name}", worker = name
     } },
     { for name in local.demo_examples : "${name}/*" => {
-      pattern = "demo.pywire.dev/${name}/*", script = "pywire-demo-${name}"
+      pattern = "demo.pywire.dev/${name}/*", worker = name
     } },
   )
+}
+
+resource "cloudflare_worker" "demo" {
+  for_each   = local.demo_workers
+  account_id = var.account_id
+  name       = each.value
+
+  # Only reachable through the routes below, like workers_dev = false and
+  # preview_urls = false in each wrangler.toml.
+  subdomain = {
+    enabled          = false
+    previews_enabled = false
+  }
 }
 
 # Cloudflare sends a request to the most specific matching route, so the
@@ -153,7 +171,7 @@ resource "cloudflare_workers_route" "demo" {
   for_each = local.demo_routes
   zone_id  = var.zone_id
   pattern  = each.value.pattern
-  script   = each.value.script
+  script   = cloudflare_worker.demo[each.value.worker].name
 }
 
 # --- VS Code Marketplace Domain Verification ---
