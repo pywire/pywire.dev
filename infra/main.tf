@@ -120,17 +120,40 @@ resource "cloudflare_dns_record" "nightly" {
 }
 
 # --- Demos (demo.pywire.dev) ---
-# Workers only: the landing page and each example are Workers deployed from
-# pywire/pywire (Deploy Examples workflow) with their own routes. A proxied
-# record is all the hostname needs; 100:: is the placeholder Cloudflare
-# documents for a Worker-only hostname.
+# The landing page and each example are Workers whose code pywire/pywire's
+# Deploy Examples workflow uploads. Their DNS and routes live here. The Workers
+# must exist before these routes apply, so the first apply follows that
+# workflow's first run.
 resource "cloudflare_dns_record" "demo" {
   zone_id = var.zone_id
   name    = "demo"
-  content = "100::"
+  content = "100::" # Cloudflare's placeholder for a Worker-only hostname
   type    = "AAAA"
   proxied = true
   ttl     = 1
+}
+
+locals {
+  # Each example is served under /<name> by the Worker pywire-demo-<name>.
+  demo_examples = ["edge-stateless", "form-builder"]
+  demo_routes = merge(
+    { "site" = { pattern = "demo.pywire.dev/*", script = "pywire-demo" } },
+    { for name in local.demo_examples : name => {
+      pattern = "demo.pywire.dev/${name}", script = "pywire-demo-${name}"
+    } },
+    { for name in local.demo_examples : "${name}/*" => {
+      pattern = "demo.pywire.dev/${name}/*", script = "pywire-demo-${name}"
+    } },
+  )
+}
+
+# Cloudflare sends a request to the most specific matching route, so the
+# example routes win over the landing page's catch-all.
+resource "cloudflare_workers_route" "demo" {
+  for_each = local.demo_routes
+  zone_id  = var.zone_id
+  pattern  = each.value.pattern
+  script   = each.value.script
 }
 
 # --- VS Code Marketplace Domain Verification ---
