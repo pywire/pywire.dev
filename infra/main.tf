@@ -136,7 +136,7 @@ resource "cloudflare_dns_record" "demo" {
 
 locals {
   # Each example is served under /<name> by the Worker pywire-demo-<name>.
-  demo_examples = ["edge-stateless", "form-builder"]
+  demo_examples = ["edge-stateless", "form-builder", "realtime"]
   demo_workers = merge(
     { "site" = "pywire-demo" },
     { for name in local.demo_examples : name => "pywire-demo-${name}" },
