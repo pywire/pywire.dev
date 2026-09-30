@@ -155,8 +155,9 @@ locals {
 # Created through the scripts API, like the router, with a placeholder that
 # answers 503 until the Deploy Examples workflow uploads the real code. After
 # that the workflow owns the code and settings, so Terraform never updates
-# them. (cloudflare_worker's newer Workers API returned 403 for this token even
-# with Workers Scripts Write and Workers Editor.)
+# them. A code-less cloudflare_worker can't take routes ("Cannot configure a
+# route for a Worker which does not exist"), so the placeholder is what lets
+# the routes apply before the first deploy.
 resource "cloudflare_workers_script" "demo" {
   for_each           = local.demo_workers
   account_id         = var.account_id
@@ -173,6 +174,16 @@ resource "cloudflare_workers_script" "demo" {
 
   lifecycle {
     ignore_changes = all
+  }
+}
+
+# The first apply created these as code-less cloudflare_worker resources.
+# Forget them without deleting; the scripts above upload to the same names.
+removed {
+  from = cloudflare_worker.demo
+
+  lifecycle {
+    destroy = false
   }
 }
 
