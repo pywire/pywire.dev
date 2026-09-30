@@ -1,0 +1,64 @@
+name: Deploy Nightly
+
+# Puts a PR's landing-site build on nightly.pywire.dev. workflow_run always
+# runs this file as it is on main, so a PR can change what gets built but not
+# what this job does with the token: it only downloads the artifact that
+# deploy.yml built (without secrets) and uploads it to the nightly branch.
+on:
+  workflow_run:
+    workflows: [Deploy Landing Site]
+    types: [completed]
+
+permissions: {}
+
+jobs:
+  deploy-nightly:
+    if: >-
+      github.event.workflow_run.conclusion == 'success'
+      && github.event.workflow_run.head_repository.full_name == github.repository
+      && (github.event.workflow_run.event == 'pull_request'
+          || (github.event.workflow_run.event == 'workflow_dispatch'
+              && github.event.workflow_run.head_branch != 'main'))
+    # Strictly one deploy at a time: a running deploy is never cancelled, and
+    # a newer one waits for it (GitHub keeps only the newest waiting job).
+    concurrency:
+      group: deploy-landing-nightly
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    # Restricted to main in the repo settings (workflow_run runs on main) and
+    # holds the Pages-only CLOUDFLARE_PAGES_TOKEN.
+    environment:
+      name: nightly
+      url: https://nightly.pywire.dev
+    permissions:
+      actions: read # the build artifact lives on the triggering run
+    name: Deploy Nightly
+    steps:
+      - name: Find build
+        id: build
+        # Drafts skip the build, so there is nothing to deploy.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+        run: |
+          count=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts" \
+            --jq '[.artifacts[] | select(.name == "landing-dist" and (.expired | not))] | length')
+          echo "found=$([ "$count" -gt 0 ] && echo true || echo false)" >>"$GITHUB_OUTPUT"
+
+      - name: Download build
+        if: steps.build.outputs.found == 'true'
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: landing-dist
+          path: dist
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+
+      - name: Deploy to Cloudflare Pages
+        if: steps.build.outputs.found == 'true'
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
+        with:
+          wranglerVersion: '4.145.0'
+          apiToken: ${{ secrets.CLOUDFLARE_PAGES_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=pywire-landing --branch=nightly

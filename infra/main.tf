@@ -48,6 +48,13 @@ resource "cloudflare_pages_project" "docs" {
     build_command   = "pnpm run build"
     destination_dir = "dist"
   }
+
+  # Destroying a project drops its custom domain and DNS record (see
+  # infra/README.md) and releases its pages.dev name, which the router proxies
+  # to.
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 resource "cloudflare_pages_project" "landing" {
@@ -60,6 +67,10 @@ resource "cloudflare_pages_project" "landing" {
     build_command   = "pnpm run build"
     destination_dir = "dist"
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 # Custom domains: Pages auto-managed this CNAME while the domain was attached
@@ -68,7 +79,7 @@ resource "cloudflare_pages_project" "landing" {
 resource "cloudflare_dns_record" "docs_cname" {
   zone_id = var.zone_id
   name    = "docs"
-  content = "pywire-docs.pages.dev"
+  content = cloudflare_pages_project.docs.subdomain
   type    = "CNAME"
   proxied = true
   ttl     = 1
@@ -101,11 +112,25 @@ resource "cloudflare_workers_script" "router" {
   content_sha256 = filesha256("../worker/src/index.js")
   main_module    = "index.js"
 
-  bindings = [{
-    name        = "CDN_BUCKET"
-    type        = "r2_bucket"
-    bucket_name = cloudflare_r2_bucket.cdn.name
-  }]
+  # The router proxies to the Pages projects by these names; they live here,
+  # next to the projects, rather than hardcoded in the Worker.
+  bindings = [
+    {
+      name        = "CDN_BUCKET"
+      type        = "r2_bucket"
+      bucket_name = cloudflare_r2_bucket.cdn.name
+    },
+    {
+      name = "LANDING_HOST"
+      type = "plain_text"
+      text = cloudflare_pages_project.landing.subdomain
+    },
+    {
+      name = "DOCS_HOST"
+      type = "plain_text"
+      text = cloudflare_pages_project.docs.subdomain
+    },
+  ]
 }
 
 # --- Nightly Environment ---
@@ -219,6 +244,24 @@ resource "cloudflare_workers_route" "nightly" {
   zone_id = var.zone_id
   pattern = "nightly.pywire.dev/*"
   script  = cloudflare_workers_script.router.script_name
+}
+
+# www has a proxied DNS record that predates Terraform (see infra/README.md)
+# and no working origin behind it (525). The router answers it with a
+# redirect to the apex.
+resource "cloudflare_workers_route" "www" {
+  zone_id = var.zone_id
+  pattern = "www.pywire.dev/*"
+  script  = cloudflare_workers_script.router.script_name
+}
+
+# HTTPS only. Cloudflare redirects http:// at the edge for every proxied
+# hostname in the zone; the router also redirects, and sends HSTS
+# (includeSubDomains) on its responses.
+resource "cloudflare_zone_setting" "always_use_https" {
+  zone_id    = var.zone_id
+  setting_id = "always_use_https"
+  value      = "on"
 }
 
 # --- 6. Allow AI crawlers to LLM documentation files ---
