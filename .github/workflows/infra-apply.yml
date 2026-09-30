@@ -3,8 +3,7 @@ name: Infra apply
 on:
   workflow_dispatch: {}
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: terraform
@@ -12,8 +11,16 @@ concurrency:
 
 jobs:
   apply:
+    # The real guard is the production environment: it is restricted to main
+    # in the repo settings and holds the write credentials, so a dispatch from
+    # any other branch (which runs that branch's copy of this file) gets
+    # nothing. The job-level `if` just skips such runs cleanly.
+    if: github.ref == 'refs/heads/main'
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: infra
@@ -25,15 +32,11 @@ jobs:
       TF_VAR_maintainer_emails: ${{ secrets.MAINTAINER_EMAILS }}
       TF_IN_AUTOMATION: "true"
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      - name: Main branch only
-        if: github.ref != 'refs/heads/main'
-        run: |
-          echo "::error::Infra apply only runs on main"
-          exit 1
-
-      - uses: hashicorp/setup-terraform@v4.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: 1.16.4
           terraform_wrapper: false
